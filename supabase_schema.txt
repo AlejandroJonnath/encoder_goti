@@ -1,0 +1,81 @@
+-- Habilitar extensión pgcrypto si no está habilitada
+create extension if not exists "pgcrypto";
+
+-- 1. Tabla de Perfiles (Profiles)
+-- Se enlaza directamente con la tabla de usuarios de Supabase Auth
+create table public.profiles (
+  id uuid references auth.users not null primary key,
+  email text,
+  full_name text,
+  avatar_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Activar Row Level Security (RLS) para perfiles
+alter table public.profiles enable row level security;
+
+-- Políticas de RLS para perfiles
+create policy "Los usuarios pueden ver su propio perfil." on public.profiles for select using (auth.uid() = id);
+create policy "Los usuarios pueden actualizar su propio perfil." on public.profiles for update using (auth.uid() = id);
+
+-- Función y Trigger para crear un perfil automáticamente cuando un usuario se registra
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email)
+  values (new.id, new.email);
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+
+-- 2. Tabla de Documentos (Documents)
+-- Guarda el registro de todos los archivos subidos y procesados por el usuario
+create table public.documents (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  original_name text not null,
+  storage_path text not null, -- Ruta dentro del bucket de storage
+  document_type text,         -- ej: 'pdf', 'word', 'image'
+  operation text,             -- ej: 'convert', 'merge', 'compress', 'sign'
+  status text default 'pending', -- 'pending', 'processing', 'completed', 'failed'
+  result_path text,           -- Ruta del archivo resultante procesado
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Activar RLS para documentos
+alter table public.documents enable row level security;
+
+-- Políticas de RLS para documentos
+create policy "Los usuarios pueden ver sus propios documentos." on public.documents for select using (auth.uid() = user_id);
+create policy "Los usuarios pueden insertar sus propios documentos." on public.documents for insert with check (auth.uid() = user_id);
+create policy "Los usuarios pueden actualizar sus propios documentos." on public.documents for update using (auth.uid() = user_id);
+create policy "Los usuarios pueden eliminar sus propios documentos." on public.documents for delete using (auth.uid() = user_id);
+
+
+-- 3. Configuración del Storage (Buckets)
+-- Creamos un bucket privado llamado 'user_documents'
+insert into storage.buckets (id, name, public) values ('user_documents', 'user_documents', false);
+
+-- Políticas de seguridad para el Storage
+-- Asegura que los usuarios solo puedan acceder a los archivos que ellos mismos subieron
+create policy "Los usuarios pueden subir archivos a su propia carpeta"
+on storage.objects for insert
+with check ( bucket_id = 'user_documents' and auth.uid()::text = (storage.foldername(name))[1] );
+
+create policy "Los usuarios pueden ver sus propios archivos"
+on storage.objects for select
+using ( bucket_id = 'user_documents' and auth.uid()::text = (storage.foldername(name))[1] );
+
+create policy "Los usuarios pueden actualizar sus propios archivos"
+on storage.objects for update
+using ( bucket_id = 'user_documents' and auth.uid()::text = (storage.foldername(name))[1] );
+
+create policy "Los usuarios pueden eliminar sus propios archivos"
+on storage.objects for delete
+using ( bucket_id = 'user_documents' and auth.uid()::text = (storage.foldername(name))[1] );
