@@ -28,6 +28,14 @@ const TYPE_MAP: Record<string, { label: string; color: string }> = {
   "word-to-pdf": { label: "Word a PDF", color: "#2B579A" },
   // (Conversión desde imagen hacia PDF)
   "img-to-pdf": { label: "Imagen a PDF", color: "#E53935" },
+  // (Conversión hacia PDF desde la pantalla principal)
+  "word": { label: "Word a PDF", color: "#2B579A" },
+  "excel": { label: "Excel a PDF", color: "#217346" },
+  "ppt": { label: "PowerPoint a PDF", color: "#D24726" },
+  "jpg": { label: "JPG a PDF", color: "#F4B400" },
+  "png": { label: "PNG a PDF", color: "#E5322D" },
+  "html": { label: "HTML a PDF", color: "#E34F26" },
+  "txt": { label: "TXT a PDF", color: "#757575" },
 };
 
 // Función ConvertScreen: Pantalla dinámica que muta según la herramienta
@@ -54,12 +62,26 @@ export default function ConvertScreen() {
   } = useConvertLogic();
 
   function handleProcess() {
-    let destinationType = "doc";
-    if (type === "to-excel") destinationType = "xls";
+    let destinationType = "pdf"; // Default to pdf for the to-pdf conversions
+    
+    if (type === "to-word") destinationType = "doc";
+    else if (type === "to-excel") destinationType = "xls";
     else if (type === "to-jpg") destinationType = "jpg";
     else if (type === "to-png") destinationType = "png";
-    else if (type === "word-to-pdf" || type === "img-to-pdf")
+    else if (
+      type === "word" || 
+      type === "excel" || 
+      type === "ppt" || 
+      type === "jpg" || 
+      type === "png" || 
+      type === "html" || 
+      type === "txt" || 
+      type === "word-to-pdf" || 
+      type === "img-to-pdf"
+    ) {
       destinationType = "pdf";
+    }
+    
     processConversion(destinationType);
   }
 
@@ -76,7 +98,7 @@ export default function ConvertScreen() {
         {!file ? (
           <TouchableOpacity
             style={[styles.uploadBox, { borderColor: config.color }]}
-            onPress={pickDocument}
+            onPress={() => pickDocument(type)}
           >
             {/* (Icono de subida con color dinámico) */}
             <UploadCloud size={64} color={config.color} />

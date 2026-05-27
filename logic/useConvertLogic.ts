@@ -19,10 +19,61 @@ export function useConvertLogic() {
   const [completed, setCompleted] = useState(false);
   const [resultUri, setResultUri] = useState<string | null>(null);
 
-  async function pickDocument() {
+  async function pickDocument(conversionType?: string) {
     try {
+      let allowedTypes: string | string[] = "*/*";
+
+      if (conversionType) {
+        switch (conversionType) {
+          case "word":
+          case "word-to-pdf":
+            allowedTypes = [
+              "application/msword",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ];
+            break;
+          case "excel":
+          case "to-excel":
+            if (conversionType === "to-excel") {
+              allowedTypes = "application/pdf";
+            } else {
+              allowedTypes = [
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              ];
+            }
+            break;
+          case "ppt":
+            allowedTypes = [
+              "application/vnd.ms-powerpoint",
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ];
+            break;
+          case "jpg":
+          case "img-to-pdf":
+            allowedTypes = ["image/jpeg", "image/jpg"];
+            break;
+          case "png":
+            allowedTypes = ["image/png"];
+            break;
+          case "html":
+            allowedTypes = ["text/html"];
+            break;
+          case "txt":
+            allowedTypes = ["text/plain"];
+            break;
+          case "to-word":
+          case "to-jpg":
+          case "to-png":
+            allowedTypes = "application/pdf";
+            break;
+          default:
+            allowedTypes = "*/*";
+        }
+      }
+
       const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf",
+        type: allowedTypes,
         copyToCacheDirectory: true,
       });
       if (!result.canceled) {

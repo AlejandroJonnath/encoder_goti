@@ -22,7 +22,7 @@ type Tool = {
   // Pequeña descripción
   description: string;
   // Componente de ícono a renderizar
-  icon: JSX.Element;
+  icon: React.ReactNode;
   // Color temático de la marca
   color: string;
   // Dirección de pantalla a la que viajará

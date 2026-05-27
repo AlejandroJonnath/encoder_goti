@@ -161,6 +161,70 @@ export async function extractTextFromPdf(fileUrl: string) {
   return txtResponse.data;
 }
 
+// Función dinámica que convierte archivos hacia o desde PDF dependiendo del formato de destino
+export async function convertPdfTo(fileUrl: string, convertType: string) {
+  const lowercaseUrl = fileUrl.toLowerCase();
+  
+  if (convertType === 'pdf') {
+    // Conversión HACIA PDF
+    if (
+      lowercaseUrl.includes('.doc') || 
+      lowercaseUrl.includes('.docx') || 
+      lowercaseUrl.includes('.xls') || 
+      lowercaseUrl.includes('.xlsx') || 
+      lowercaseUrl.includes('.ppt') || 
+      lowercaseUrl.includes('.pptx') || 
+      lowercaseUrl.includes('.txt')
+    ) {
+      return await convertDocumentToPdf(fileUrl, 'converted.pdf');
+    } else if (
+      lowercaseUrl.includes('.jpg') || 
+      lowercaseUrl.includes('.jpeg') || 
+      lowercaseUrl.includes('.png')
+    ) {
+      return await convertImageToPdf(fileUrl, 'converted.pdf');
+    } else if (
+      lowercaseUrl.includes('.html') || 
+      lowercaseUrl.includes('.htm')
+    ) {
+      return await convertHtmlToPdf(fileUrl, 'converted.pdf');
+    } else {
+      throw new Error('Formato de archivo no soportado para conversión a PDF');
+    }
+  } else {
+    // Conversión DESDE PDF a otros formatos
+    let endpoint = '';
+    let name = 'converted';
+    
+    if (convertType === 'doc') {
+      endpoint = 'https://api.pdf.co/v1/pdf/convert/to/doc';
+      name += '.doc';
+    } else if (convertType === 'xls') {
+      endpoint = 'https://api.pdf.co/v1/pdf/convert/to/xls';
+      name += '.xlsx';
+    } else if (convertType === 'jpg') {
+      endpoint = 'https://api.pdf.co/v1/pdf/convert/to/jpg';
+      name += '.jpg';
+    } else if (convertType === 'png') {
+      endpoint = 'https://api.pdf.co/v1/pdf/convert/to/png';
+      name += '.png';
+    } else {
+      throw new Error(`Tipo de conversión no soportado: ${convertType}`);
+    }
+
+    const response = await axios.post(endpoint, {
+      url: fileUrl,
+      name: name,
+    }, {
+      headers: { 'x-api-key': PDFCO_API_KEY }
+    });
+
+    if (response.data.error) throw new Error(response.data.message);
+    return response.data.url;
+  }
+}
+
+
 // si quitas getPresignedUrl pasa que jamás podrás subir archivos porque el servidor nunca te dará la URL de destino
 // si quitas uploadFileToPdfco pasa que tus documentos locales nunca llegarán a internet y todas las demás herramientas fallarán porque no tendrán de dónde sacar el archivo original
 // si quitas convertDocumentToPdf pasa que el botón de convertir Word a PDF quedará inservible
