@@ -19,9 +19,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  StyleSheet,
-  SafeAreaView
+  StyleSheet
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Slider from "@react-native-community/slider";
 import { useSignLogic } from "../../logic/useSignLogic";
 

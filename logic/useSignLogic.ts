@@ -69,7 +69,7 @@ export function useSignLogic() {
   async function pickP12File() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/x-pkcs12", "application/x-pkcs12-pfx", "*/*"],
+        type: ["application/x-pkcs12", "application/x-pkcs12-pfx"],
         copyToCacheDirectory: true,
       });
       
@@ -127,7 +127,7 @@ export function useSignLogic() {
     }
   }
 
-  // Realizar el firmado y estampar visualmente SIN bordes ni contornos
+  // Realizar el firmado criptográfico enviando los datos al Backend
   async function executeSignature() {
     if (!pdfFile) return;
     
@@ -139,92 +139,57 @@ export function useSignLogic() {
 
     setProcessing(true);
     try {
-      // 1. Cargar PDF
-      const pdfBase64 = await readAsStringAsync(pdfFile.uri, {
-        encoding: "base64",
-      });
-      const pdfDoc = await PDFDocument.load(pdfBase64);
-      const pages = pdfDoc.getPages();
+      const formData = new FormData();
+      formData.append("pdf", {
+        uri: pdfFile.uri,
+        name: pdfFile.name || "document.pdf",
+        type: "application/pdf",
+      } as any);
       
-      const targetPageIndex = Math.min(Math.max(1, pageNumber), pages.length) - 1;
-      const page = pages[targetPageIndex];
-      const { width: pageWidth, height: pageHeight } = page.getSize();
+      formData.append("p12", {
+        uri: p12File!.uri,
+        name: p12File!.name || "firma.p12",
+        type: "application/x-pkcs12",
+      } as any);
 
-      const stampWidth = scaleWidth;
-      const stampHeight = 85;
+      formData.append("password", p12Password);
+      formData.append("posX", posX.toString());
+      formData.append("posY", posY.toString());
 
-      // Calcular coordenadas en base a porcentajes
-      const x = (posX / 100) * (pageWidth - stampWidth);
-      const y = (posY / 100) * (pageHeight - stampHeight);
+      // IP fallback: si estás en tu PC local, usarás una IP o un servicio hosteado
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "http://192.168.1.10:3000"; // <-- Cambiar esta IP a la local de tu PC si usas expo go
 
-      // Fuentes nativas PDF
-      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-      // Fecha de Ecuador (GMT-5) y hash único
-      const dateString = new Date().toLocaleString("es-EC", { timeZone: "America/Guayaquil" });
-      const rawDateString = dateString.replace(/\u202f/g, " ").replace(/\u00a0/g, " ");
-      const randomHash = Math.random().toString(36).substring(2, 10).toUpperCase() + "-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      // 2. Estampado visual de firma digital limpio (SIN BORDES NI RECUADRO)
-      page.drawText("FIRMADO DIGITALMENTE", {
-        x: x + 4,
-        y: y + stampHeight - 16,
-        size: 8.5,
-        font: helveticaBoldFont,
-        color: rgb(0.12, 0.44, 0.73), // Color azul legal
+      const response = await fetch(`${backendUrl}/api/sign`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Accept": "application/pdf",
+        },
       });
 
-      page.drawText(`Firmante: ${signerName}`, {
-        x: x + 4,
-        y: y + stampHeight - 28,
-        size: 7.5,
-        font: helveticaFont,
-        color: rgb(0.1, 0.1, 0.1),
-      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || "Error en el servidor de firmas");
+      }
 
-      page.drawText(`Fecha: ${rawDateString}`, {
-        x: x + 4,
-        y: y + stampHeight - 40,
-        size: 7,
-        font: helveticaFont,
-        color: rgb(0.2, 0.2, 0.2),
-      });
-
-      page.drawText(`Emisor: ${issuerName}`, {
-        x: x + 4,
-        y: y + stampHeight - 52,
-        size: 6.5,
-        font: helveticaFont,
-        color: rgb(0.3, 0.3, 0.3),
-      });
-
-      page.drawText(`Serie: ${serialNumber || "N/A"}`, {
-        x: x + 4,
-        y: y + stampHeight - 64,
-        size: 6.5,
-        font: helveticaFont,
-        color: rgb(0.4, 0.4, 0.4),
-      });
-
-      page.drawText(`Firma Electrónica Reconocida en Ecuador (ARCOTEL)`, {
-        x: x + 4,
-        y: y + stampHeight - 76,
-        size: 6.5,
-        font: helveticaBoldFont,
-        color: rgb(0.0, 0.5, 0.2), // Verde para certificar validez
-      });
-
-      // 3. Guardar el archivo firmado digitalmente
-      const signedPdfBase64 = await pdfDoc.saveAsBase64();
-      const finalUri = documentDirectory + "signed_" + Date.now() + ".pdf";
-      await writeAsStringAsync(finalUri, signedPdfBase64, { encoding: "base64" });
-
-      setResultUri(finalUri);
-      setCompleted(true);
+      // Convertir la respuesta Blob del servidor a Base64 y guardarla
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64data = reader.result?.toString().split(",")[1];
+        if (base64data) {
+          const finalUri = documentDirectory + "signed_" + Date.now() + ".pdf";
+          await writeAsStringAsync(finalUri, base64data, { encoding: "base64" });
+          setResultUri(finalUri);
+          setCompleted(true);
+          setProcessing(false);
+        }
+      };
+      
+      return; // El bloque onloadend se encarga de terminar el estado
     } catch (err: any) {
       Alert.alert("Error al firmar", err.message || "Ocurrió un error al estampar tu firma en el documento.");
-    } finally {
       setProcessing(false);
     }
   }
