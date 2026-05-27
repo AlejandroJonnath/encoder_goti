@@ -30,16 +30,18 @@ export function useConvertLogic() {
             allowedTypes = [
               "application/msword",
               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ".doc", ".docx"
             ];
             break;
           case "excel":
           case "to-excel":
             if (conversionType === "to-excel") {
-              allowedTypes = "application/pdf";
+              allowedTypes = ["application/pdf", ".pdf"];
             } else {
               allowedTypes = [
                 "application/vnd.ms-excel",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".xls", ".xlsx"
               ];
             }
             break;
@@ -47,25 +49,26 @@ export function useConvertLogic() {
             allowedTypes = [
               "application/vnd.ms-powerpoint",
               "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              ".ppt", ".pptx"
             ];
             break;
           case "jpg":
           case "img-to-pdf":
-            allowedTypes = ["image/jpeg", "image/jpg"];
+            allowedTypes = ["image/jpeg", "image/jpg", ".jpg", ".jpeg"];
             break;
           case "png":
-            allowedTypes = ["image/png"];
+            allowedTypes = ["image/png", ".png"];
             break;
           case "html":
-            allowedTypes = ["text/html"];
+            allowedTypes = ["text/html", ".html", ".htm"];
             break;
           case "txt":
-            allowedTypes = ["text/plain"];
+            allowedTypes = ["text/plain", ".txt"];
             break;
           case "to-word":
           case "to-jpg":
           case "to-png":
-            allowedTypes = "application/pdf";
+            allowedTypes = ["application/pdf", ".pdf"];
             break;
           default:
             allowedTypes = "*/*";
@@ -93,9 +96,17 @@ export function useConvertLogic() {
       const uploadedUrl = await uploadFileToPdfco(file.uri, file.name);
       // convertPdfTo puede lanzar dependiendo del tipo
       const convertedUrl = await convertPdfTo(uploadedUrl, convertType);
+
+      // Determinar la extensión correcta basada en convertType para que no se guarde como .bin
+      let ext = ".pdf";
+      if (convertType === "doc") ext = ".doc";
+      else if (convertType === "xls") ext = ".xlsx";
+      else if (convertType === "jpg") ext = ".jpg";
+      else if (convertType === "png") ext = ".png";
+
       const downloadRes = await downloadAsync(
         convertedUrl,
-        documentDirectory + "converted_" + Date.now(),
+        documentDirectory + "converted_" + Date.now() + ext,
       );
       setResultUri(downloadRes.uri);
       setCompleted(true);
