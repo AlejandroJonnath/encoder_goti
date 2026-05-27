@@ -104,9 +104,19 @@ export function useConvertLogic() {
       else if (convertType === "jpg") ext = ".jpg";
       else if (convertType === "png") ext = ".png";
 
+      let originalName = "converted_" + Date.now();
+      if (file && file.name) {
+        const lastDotIndex = file.name.lastIndexOf(".");
+        if (lastDotIndex !== -1) {
+          originalName = file.name.substring(0, lastDotIndex);
+        } else {
+          originalName = file.name;
+        }
+      }
+
       const downloadRes = await downloadAsync(
         convertedUrl,
-        documentDirectory + "converted_" + Date.now() + ext,
+        documentDirectory + originalName + ext,
       );
       setResultUri(downloadRes.uri);
       setCompleted(true);
