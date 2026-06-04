@@ -13,6 +13,7 @@ const crypto = require('crypto');
 // Define el listado de carpetas y archivos que seran procesados por el motor criptografico
 const TARGET_PATHS = [
     'app',
+    'src',
     'components',
     'constants',
     'hooks',
@@ -176,7 +177,7 @@ function unpackPaths(packed) {
 // Sirve para validar previamente que las carpetas y archivos fundamentales existan en disco antes de encriptar (evitando destruir la copia de seguridad por error)
 function verifyMandatoryPaths() {
     // Define el listado de carpetas y archivos minimos que deben estar en claro en el disco antes de permitir el cifrado
-    const mandatory = ['app', 'components', 'package.json'];
+    const mandatory = ['src', 'package.json'];
     // Inicializa un arreglo que guardara aquellos elementos que hagan falta en el disco
     const missing = [];
     // Itera y verifica la existencia de cada elemento clave
