@@ -1,234 +1,234 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { supabase } from '@/shared/services/supabase';
 import { Link as ExpoLink, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Colors } from '@/shared/theme/theme';
+import { useCustomAlert } from '@/shared/context/AlertContext';
 
-// Sección: Este archivo maneja la pantalla donde los usuarios nuevos pueden inscribirse y crear su cuenta ingresando un correo y una contraseña segura
-
-// Funciones: RegisterScreen sirve para registrar usuarios en la base de datos verificar que las contraseñas sean válidas y meterlos directo a la aplicación sin pasos extra
-
-// Exportamos nuestro componente de registro
 export default function RegisterScreen() {
-  // Inicializamos el enrutador para poder mandarlos a otras pantallas cuando terminen
   const router = useRouter();
-  // Estado para agarrar el correo que van tipeando
   const [email, setEmail] = useState('');
-  // Estado para la contraseña
   const [password, setPassword] = useState('');
-  // Estado para el indicador de que la app se quedó pensando (la rueda giratoria)
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useCustomAlert();
 
-  // Función asíncrona para intentar guardar los datos del nuevo usuario en Supabase
   async function signUpWithEmail() {
-    // Si no escribieron nada en algún campo rebotamos la petición
     if (!email || !password) {
-      // Mostramos ventana de error
-      Alert.alert('Campos vacíos', 'Por favor ingresa tu correo y contraseña.');
+      showAlert('Campos vacíos', 'Por favor ingresa tu correo y contraseña.', 'warning');
       return;
     }
-    // Si intentan usar una contraseña débil de menos de 6 caracteres
     if (password.length < 6) {
-      // Les advertimos que debe ser más larga por seguridad
-      Alert.alert('Contraseña muy corta', 'La contraseña debe tener al menos 6 caracteres.');
+      showAlert('Contraseña muy corta', 'La contraseña debe tener al menos 6 caracteres.', 'warning');
       return;
     }
 
-    // Encendemos el ícono de carga para bloquear el botón
     setLoading(true);
     try {
-      // Paso 1: Registrar la cuenta en la base de datos de Supabase
       const { error: signUpError } = await supabase.auth.signUp({
-        // Quitamos espacios extra
         email: email.trim(),
-        // Enviamos contraseña
         password: password,
       });
 
-      // Si nos lanzan un error lo atrapamos en el "catch"
       if (signUpError) throw signUpError;
 
-      // Paso 2: Hacer login inmediatamente con las mismas credenciales
-      // Esto evita el error "email not confirmed" ya que confirmamos
-      // que Supabase tiene desactivada la confirmación de email.
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        // Mismos datos que usamos arriba
         email: email.trim(),
         password: password,
       });
 
-      // Si algo salió mal en el login automático posterior al registro
       if (signInError) {
-        // Si falla el auto-login mandamos al login manual
-        Alert.alert(
+        showAlert(
           '¡Cuenta creada!',
-          'Tu cuenta fue creada. Por favor inicia sesión manualmente.'
+          'Tu cuenta fue creada. Por favor inicia sesión manualmente.',
+          'success'
         );
-        // Lo pateamos a la pantalla de login para que lo intente a mano
         router.replace('/(auth)/login');
       }
-      // Si signInWithPassword tiene éxito el hook useAuth detecta la sesión
-      // y el _layout.tsx redirige automáticamente a /(tabs)
 
-    // Atrapamos errores generales de conexión o fallas que hayamos tirado arriba
     } catch (error: any) {
-      // Mostramos el mensaje en un popup para que el usuario entienda qué pasó
-      Alert.alert('Error', error.message || 'Ocurrió un error al registrarse.');
+      showAlert('Error', error.message || 'Ocurrió un error al registrarse.', 'error');
     } finally {
-      // Ya sea que funcionó o falló siempre apagamos el indicador de carga al terminar
       setLoading(false);
     }
   }
 
-  // Estructura visual principal
   return (
-    // Componente especial para que el teclado virtual no se coma nuestros botones
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      {/* Cabecera superior visual */}
-      <View style={styles.headerContainer}>
-        {/* El logo combinado de la app */}
-        <Text style={styles.logo}>Encoder <Text style={styles.logoBold}>Goti</Text></Text>
-        {/* Un mensajito sutil indicando de qué trata esta pantalla */}
-        <Text style={styles.subtitle}>Crea una cuenta nueva</Text>
-      </View>
+    <LinearGradient
+      colors={['#0F172A', '#020617']}
+      style={styles.gradientContainer}
+    >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        
+        {/* Animated Header */}
+        <Animated.View entering={FadeInDown.duration(800).springify()} style={styles.headerContainer}>
+          <Text style={styles.logo}>Encoder<Text style={styles.logoBold}>Goti</Text></Text>
+          <Text style={styles.subtitle}>CREA UNA CUENTA NUEVA</Text>
+        </Animated.View>
 
-      {/* Contenedor principal de las cajas de texto */}
-      <View style={styles.formContainer}>
-        {/* Título arriba de la caja de email */}
-        <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput
-          // Estilo general
-          style={styles.input}
-          // Función al teclear letras
-          onChangeText={(text) => setEmail(text)}
-          // Lo ligamos a nuestro estado local
-          value={email}
-          // Ejemplo fantasma
-          placeholder="email@address.com"
-          // Todo en minúsculas forzadas
-          autoCapitalize={'none'}
-          // Teclado con símbolo arroba
-          keyboardType="email-address"
-        />
+        {/* Animated Form */}
+        <Animated.View entering={FadeInUp.duration(1000).springify().delay(200)} style={styles.formContainer}>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>EMAIL</Text>
+            <View style={styles.glassInputContainer}>
+              <TextInput
+                style={styles.input}
+                onChangeText={(text) => setEmail(text)}
+                value={email}
+                placeholder="usuario@ejemplo.com"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                autoCapitalize={'none'}
+                keyboardType="email-address"
+              />
+            </View>
+          </View>
 
-        {/* Título arriba de la caja de clave */}
-        <Text style={styles.label}>Contraseña</Text>
-        <TextInput
-          // Mismo estilo
-          style={styles.input}
-          // Guardamos lo tipeado en su variable respectiva
-          onChangeText={(text) => setPassword(text)}
-          // Lo ligamos
-          value={password}
-          // Ocultamos los caracteres
-          secureTextEntry={true}
-          // Ejemplo en estrellitas
-          placeholder="********"
-          // Desactivamos auto mayúscula inicial
-          autoCapitalize={'none'}
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>PASSWORD</Text>
+            <View style={styles.glassInputContainer}>
+              <TextInput
+                style={styles.input}
+                onChangeText={(text) => setPassword(text)}
+                value={password}
+                secureTextEntry={true}
+                placeholder="••••••••"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                autoCapitalize={'none'}
+              />
+            </View>
+          </View>
 
-        {/* Botón táctil para enviar información al servidor */}
-        <TouchableOpacity style={styles.button} onPress={signUpWithEmail} disabled={loading}>
-          {/* Mostramos ruedita giratoria si está cargando de lo contrario enseñamos la palabra "Registrarse" */}
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Registrarse</Text>}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.buttonWrapper}
+            onPress={signUpWithEmail}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={[Colors.light.tint, '#8B5CF6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.neonButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#020617" />
+              ) : (
+                <Text style={styles.buttonText}>REGISTRARSE</Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
 
-        {/* Celdita debajo de todo con enlaces extras */}
-        <View style={styles.footer}>
-          {/* Texto pasivo */}
-          <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-          {/* Botón camuflado como texto azul que redirige a login */}
-          <ExpoLink href="/(auth)/login" asChild>
-            <TouchableOpacity>
-              <Text style={styles.link}>Inicia sesión</Text>
-            </TouchableOpacity>
-          </ExpoLink>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿YA TIENES CUENTA? </Text>
+            <ExpoLink href="/(auth)/login" asChild>
+              <TouchableOpacity>
+                <Text style={styles.link}>INICIA SESIÓN</Text>
+              </TouchableOpacity>
+            </ExpoLink>
+          </View>
+        </Animated.View>
+
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
-// Empezamos los estilos locales
 const styles = StyleSheet.create({
-  // Caja de fondo que toma toda el área
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     justifyContent: 'center',
-    padding: 24,
+    padding: 32,
   },
-  // Contenedor que centra los textos de arriba
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
   },
-  // Fuente principal del logo
   logo: {
-    fontSize: 32,
-    color: '#333',
+    fontSize: 48,
+    color: '#FFF',
+    letterSpacing: -1,
+    fontFamily: Platform.OS === 'ios' ? 'HelveticaNeue-CondensedBold' : 'sans-serif-condensed',
   },
-  // Palabra resaltada del logo
   logoBold: {
-    fontWeight: 'bold',
-    color: '#1E3A8A', // Azul marino profesional
+    color: Colors.dark.tint,
+    fontWeight: '900',
+    textShadowColor: Colors.dark.tint,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
   },
-  // Subtítulo gris
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#94A3B8',
     marginTop: 8,
+    letterSpacing: 4,
+    fontWeight: '700',
   },
-  // Tamaño completo del formulario
   formContainer: {
     width: '100%',
   },
-  // Letritas encima de los inputs
+  inputGroup: {
+    marginBottom: 24,
+  },
   label: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 12,
+    color: '#94A3B8',
     marginBottom: 8,
-    fontWeight: '500',
-  },
-  // Diseño de la caja para escribir
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  // Botón azulón gordo
-  button: {
-    backgroundColor: '#1E3A8A',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  // Color interior del botón
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    letterSpacing: 2,
     fontWeight: 'bold',
   },
-  // Parte de abajo
+  glassInputContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: '#FFF',
+  },
+  buttonWrapper: {
+    marginTop: 16,
+    borderRadius: 16,
+    shadowColor: Colors.light.tint, // Usar el morado para el registro
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  neonButton: {
+    padding: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#020617',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 32,
   },
-  // Color del párrafo
   footerText: {
-    color: '#666',
+    color: '#64748B',
+    fontSize: 12,
+    letterSpacing: 1,
   },
-  // Color tipo hipervínculo
   link: {
-    color: '#1E3A8A',
+    color: Colors.dark.tint, // Cyan neón
     fontWeight: 'bold',
+    fontSize: 12,
+    letterSpacing: 1,
+    textShadowColor: Colors.dark.tint,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
 });
-
-// si quitas RegisterScreen pasa que nadie en el mundo podrá crear una nueva cuenta y tu app no podrá captar ningún cliente o usuario nuevo

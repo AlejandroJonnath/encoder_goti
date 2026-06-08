@@ -1,123 +1,154 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSessionAuth } from '@/features/auth/hooks/useSessionAuth';
 import { supabase } from '@/shared/services/supabase';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Colors } from '@/shared/theme/theme';
+import { LogOut, User as UserIcon } from 'lucide-react-native';
+import { useCustomAlert } from '@/shared/context/AlertContext';
 
-// Sección: Este archivo maneja la pestaña que muestra los detalles de la cuenta actual donde el usuario puede ver su correo registrado y cerrar su sesión de forma segura
-
-// Funciones: ProfileScreen sirve como un espacio personal mínimo para consultar datos y como la única puerta de salida para desloguearse de la app
-
-// Exportamos nuestra pantalla personal
 export default function ProfileScreen() {
-  // Jalamos los datos del usuario logueado en este mismo instante usando nuestro hook inteligente
   const { user } = useSessionAuth();
+  const { showAlert } = useCustomAlert();
 
-  // Función asíncrona dedicada a expulsar o desloguear al usuario
   async function handleLogout() {
-    // Ordenamos a Supabase borrar las credenciales locales de este teléfono
     const { error } = await supabase.auth.signOut();
-    // Si algo raro pasara al momento de intentar cerrar la sesión
     if (error) {
-      // Le enseñamos un popup para que se entere que ocurrió
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message, 'error');
     }
-    // Ojo: Si esto funciona perfectamente el layout raíz detecta que el usuario se fue a nulo y manda a la app automáticamente hacia el panel de login
   }
 
-  // Pintamos el visual de la pantalla personal
   return (
-    // SafeAreaView impide que nuestro texto se superponga con la isla de cámaras o batería de los teléfonos modernos
-    <SafeAreaView style={styles.container}>
-      {/* Contenedor del título */}
-      <View style={styles.header}>
-        {/* Nombre de la página en grande */}
-        <Text style={styles.title}>Mi Perfil</Text>
-      </View>
+    <LinearGradient
+      colors={['#0F172A', '#020617']}
+      style={styles.gradientContainer}
+    >
+      <SafeAreaView style={styles.container}>
+        <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.header}>
+          <Text style={styles.title}>MI PERFIL</Text>
+        </Animated.View>
 
-      {/* Bloque principal donde está toda la chicha de esta pantalla */}
-      <View style={styles.content}>
-        {/* Tarjeta bonita con información estática del usuario */}
-        <View style={styles.infoCard}>
-          {/* Pequeña etiqueta descriptiva */}
-          <Text style={styles.label}>Correo Electrónico</Text>
-          {/* Aquí inyectamos el correo del usuario que agarramos arriba (el signo de interrogación es por si falla y llega nulo no truene toda la app) */}
-          <Text style={styles.value}>{user?.email}</Text>
-        </View>
+        <Animated.View entering={FadeInDown.duration(800).delay(200).springify()} style={styles.content}>
+          
+          <View style={styles.avatarContainer}>
+            <LinearGradient
+              colors={[Colors.dark.tint, Colors.light.tint]}
+              style={styles.avatarRing}
+            >
+              <View style={styles.avatarInner}>
+                <UserIcon size={48} color="#F8FAFC" />
+              </View>
+            </LinearGradient>
+          </View>
 
-        {/* Botón rectangular en la parte inferior para presionar salir */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          {/* Letras del botón en azul para denotar interactividad pero menos fuerte que un botón relleno */}
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <View style={styles.infoCard}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.01)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.label}>CORREO ELECTRÓNICO</Text>
+            <Text style={styles.value}>{user?.email}</Text>
+          </View>
+
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <LogOut color="#EF4444" size={20} style={{ marginRight: 8 }} />
+            <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
+          </TouchableOpacity>
+
+        </Animated.View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
-// Comenzamos con el bloque de estilos
 const styles = StyleSheet.create({
-  // Caja de fondo grisácea general
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
-  // Rectángulo blanco con separación
   header: {
     padding: 24,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAEAEA',
-  },
-  // Letras del título
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  // Envoltura o márgenes internos del resto del contenido
-  content: {
-    padding: 24,
-  },
-  // Tarjetita blanca con la información personal levantada de fondo para que resalte
-  infoCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  // Etiqueta tenue gris
-  label: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-  },
-  // Letras un poco más visibles para el correo final del cliente
-  value: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  // Botón delineado y sin relleno (solo blanco con un pequeño borde azul oscuro)
-  logoutButton: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#1E3A8A',
-    padding: 16,
-    borderRadius: 8,
+    paddingTop: 16,
     alignItems: 'center',
   },
-  // Letras gruesas y del mismo tono de su delineado para dar coherencia
-  logoutText: {
-    color: '#1E3A8A',
-    fontSize: 16,
+  title: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: 2,
+    fontFamily: Platform.OS === 'ios' ? 'HelveticaNeue-CondensedBold' : 'sans-serif-condensed',
+  },
+  content: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+    marginTop: 20,
+    shadowColor: Colors.dark.tint,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  avatarRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInner: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#020617',
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoCard: {
+    width: '100%',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    padding: 24,
+    borderRadius: 20,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
+  },
+  label: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginBottom: 8,
     fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  value: {
+    fontSize: 18,
+    color: '#F8FAFC',
+    fontWeight: '700',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  logoutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });
-
-// si quitas ProfileScreen pasa que el usuario será un prisionero eterno de tu app sin poder cerrar sesión en su móvil ni ver el correo actual con el que ingresó

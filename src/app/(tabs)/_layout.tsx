@@ -1,49 +1,86 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { FileText, User } from 'lucide-react-native';
+import { Colors } from '@/shared/theme/theme';
+import { View, StyleSheet, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Sección: Este archivo se encarga de crear el menú o barra de navegación que aparece pegada en la parte inferior de la pantalla dándole a los usuarios acceso rápido a las secciones principales
-
-// Funciones: TabLayout sirve para definir los botones íconos y nombres de las pestañas inferiores así como para darles un color uniforme en toda la app principal
-
-// Exportamos nuestro diseño de pestañas
 export default function TabLayout() {
-  // Retornamos el componente maestro de navegación inferior provisto por expo
   return (
     <Tabs
-      // Le inyectamos opciones generales a toda la barra
       screenOptions={{
-        // Decimos que el botón que esté seleccionado se pintará de azul marino profesional
-        tabBarActiveTintColor: '#1E3A8A', // Professional Navy Blue
-        // Escondemos la barra de títulos de arriba para tener diseño más limpio
+        tabBarActiveTintColor: Colors.dark.tint,
+        tabBarInactiveTintColor: Colors.dark.icon,
         headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarBackground: () => (
+          <LinearGradient
+            colors={['rgba(2, 6, 23, 0.85)', 'rgba(15, 23, 42, 0.95)']}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
+        tabBarShowLabel: false,
       }}>
-      {/* Declaramos la primera pestaña (el inicio o catálogo de herramientas) */}
       <Tabs.Screen
-        // Apunta al archivo index.tsx de esta misma carpeta
         name="index"
-        // Le ponemos sus propias opciones visuales
         options={{
-          // Nombre que sale debajo del icono
           title: 'Herramientas',
-          // Dibujamos el ícono de archivo de texto que traemos de lucide-react-native
-          tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+              <FileText size={24} color={color} />
+            </View>
+          ),
         }}
       />
-      {/* Declaramos la segunda pestaña (la zona personal del usuario) */}
       <Tabs.Screen
-        // Apunta al archivo profile.tsx de esta misma carpeta
         name="profile"
-        // Sus configuraciones visuales
         options={{
-          // Nombre a mostrar
           title: 'Perfil',
-          // Dibujamos un ícono de una silueta de persona con el color respectivo según esté activa o no
-          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.iconContainerActive : styles.iconContainer}>
+              <User size={24} color={color} />
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
 
-// si quitas TabLayout pasa que perderás tu menú principal de abajo los usuarios no sabrán cómo navegar entre la pantalla de inicio y su perfil y quedarás con pantallas sueltas
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 24 : 16,
+    left: 24,
+    right: 24,
+    elevation: 0,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    height: 64,
+    borderTopWidth: 0,
+    shadowColor: Colors.dark.tint,
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+  },
+  iconContainerActive: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    shadowColor: Colors.dark.tint,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+  },
+});

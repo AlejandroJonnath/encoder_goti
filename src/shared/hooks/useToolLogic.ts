@@ -1,11 +1,12 @@
 import * as DocumentPicker from "expo-document-picker";
 import { useState } from "react";
-import { Alert } from "react-native";
+import { useCustomAlert } from "@/shared/context/AlertContext";
 
 // Sección: Hook para la pantalla genérica de herramientas
 // Funciones: useToolLogic expone selección de archivo procesamiento simulado y control de estados
 
 export function useToolLogic() {
+  const { showAlert } = useCustomAlert();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerResult | null>(
     null,
   );
@@ -28,7 +29,7 @@ export function useToolLogic() {
         setCompleted(false);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo seleccionar el archivo");
+      showAlert("Error", "No se pudo seleccionar el archivo", "error");
     }
   }
 
@@ -38,7 +39,7 @@ export function useToolLogic() {
     setTimeout(() => {
       setProcessing(false);
       setCompleted(true);
-      Alert.alert("¡Éxito!", "El archivo ha sido procesado correctamente.");
+      showAlert("¡Éxito!", "El archivo ha sido procesado correctamente.", "success");
     }, 3000);
   }
 

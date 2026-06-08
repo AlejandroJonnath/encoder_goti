@@ -2,8 +2,8 @@ import * as DocumentPicker from "expo-document-picker";
 import { documentDirectory, downloadAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useState } from "react";
-import { Alert } from "react-native";
 import { uploadFileToPdfco } from "@/features/pdf/shared/services/pdfco";
+import { useCustomAlert } from "@/shared/context/AlertContext";
 // Some environments may not export convertPdfTo as a named export; fall back to require at runtime
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { convertPdfTo } = require("@/features/pdf/shared/services/pdfco");
@@ -12,6 +12,7 @@ const { convertPdfTo } = require("@/features/pdf/shared/services/pdfco");
 // Funciones: usePdfConversion expone estados y funciones para elegir un archivo subirlo pedir la conversión y descargar el resultado
 
 export function usePdfConversion() {
+  const { showAlert } = useCustomAlert();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(
     null,
   );
@@ -85,7 +86,7 @@ export function usePdfConversion() {
         setResultUri(null);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo seleccionar el archivo");
+      showAlert("Error", "No se pudo seleccionar el archivo", "error");
     }
   }
 
@@ -119,7 +120,7 @@ export function usePdfConversion() {
       setResultUri(downloadRes.uri);
       setCompleted(true);
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Ocurrió un error");
+      showAlert("Error", error.message || "Ocurrió un error", "error");
     } finally {
       setProcessing(false);
     }

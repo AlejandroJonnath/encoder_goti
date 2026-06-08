@@ -7,13 +7,14 @@ import {
 import * as Sharing from "expo-sharing";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { useState } from "react";
-import { Alert } from "react-native";
 import { decodeP12Certificate } from "@/features/pdf/shared/services/p12";
+import { useCustomAlert } from "@/shared/context/AlertContext";
 
 // Sección: Lógica de firmado electrónico avanzado de Ecuador con archivos criptográficos .p12/.pfx reales
 // Funciones: usePdfSignature administra la carga del PDF, la carga del certificado .p12, descifrado con contraseña, y estampado vectorial limpio (sin bordes).
 
 export function usePdfSignature() {
+  const { showAlert } = useCustomAlert();
   const [pdfFile, setPdfFile] =
     useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
@@ -61,7 +62,7 @@ export function usePdfSignature() {
         setPageNumber(1);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo cargar el archivo PDF.");
+      showAlert("Error", "No se pudo cargar el archivo PDF.", "error");
     }
   }
 
@@ -83,18 +84,18 @@ export function usePdfSignature() {
         setResultUri(null);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo seleccionar el archivo de firma electrónica.");
+      showAlert("Error", "No se pudo seleccionar el archivo de firma electrónica.", "error");
     }
   }
 
   // Descifrar y validar el certificado .p12 ingresado
   async function loadAndValidateP12() {
     if (!p12File) {
-      Alert.alert("Alerta", "Por favor selecciona tu archivo de firma electrónica (.p12 / .pfx)");
+      showAlert("Alerta", "Por favor selecciona tu archivo de firma electrónica (.p12 / .pfx)", "warning");
       return false;
     }
     if (!p12Password) {
-      Alert.alert("Alerta", "Por favor ingresa la contraseña de tu firma electrónica.");
+      showAlert("Alerta", "Por favor ingresa la contraseña de tu firma electrónica.", "warning");
       return false;
     }
 
@@ -113,7 +114,7 @@ export function usePdfSignature() {
       setSerialNumber(decoded.serialNumber);
       setIsValidCert(true);
 
-      Alert.alert("Firma Validada", `Certificado descifrado con éxito.\nFirmante: ${decoded.commonName}`);
+      showAlert("Firma Validada", `Certificado descifrado con éxito.\nFirmante: ${decoded.commonName}`, "success");
       setProcessing(false);
       return true;
     } catch (error: any) {
@@ -121,7 +122,7 @@ export function usePdfSignature() {
       setSignerName("");
       setIssuerName("");
       setSerialNumber("");
-      Alert.alert("Error de Firma", error.message || "No se pudo descifrar la firma electrónica.");
+      showAlert("Error de Firma", error.message || "No se pudo descifrar la firma electrónica.", "error");
       setProcessing(false);
       return false;
     }
@@ -192,7 +193,7 @@ export function usePdfSignature() {
 
       return;
     } catch (err: any) {
-      Alert.alert("Error al firmar", err.message || "Ocurrió un error al estampar tu firma en el documento.");
+      showAlert("Error al firmar", err.message || "Ocurrió un error al estampar tu firma en el documento.", "error");
       setProcessing(false);
     }
   }

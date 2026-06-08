@@ -1,13 +1,14 @@
 import * as DocumentPicker from "expo-document-picker";
 import { useState } from "react";
-import { Alert } from "react-native";
 import { summarizeText } from "@/features/ai/services/aiAssistant";
+import { useCustomAlert } from "@/shared/context/AlertContext";
 import { extractTextFromPdf, uploadFileToPdfco } from "@/features/pdf/shared/services/pdfco";
 
 // Sección: Hook que contiene la lógica para la pantalla de IA
 // Funciones: useAIProcessing expone estados y funciones para seleccionar un PDF extraer texto y solicitar un resumen a la IA
 
 export function useAIProcessing() {
+  const { showAlert } = useCustomAlert();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(
     null,
   );
@@ -27,7 +28,7 @@ export function useAIProcessing() {
         setSummary(null);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo seleccionar el archivo");
+      showAlert("Error", "No se pudo seleccionar el archivo", "error");
     }
   }
 
@@ -48,9 +49,10 @@ export function useAIProcessing() {
       const aiSummary = await summarizeText(text);
       setSummary(aiSummary as any);
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error con IA",
         error.message || "Ocurrió un error inesperado al analizar.",
+        "error"
       );
     } finally {
       setProcessing(false);

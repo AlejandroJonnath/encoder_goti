@@ -2,12 +2,12 @@ import * as DocumentPicker from "expo-document-picker";
 import { documentDirectory, downloadAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useState } from "react";
-import { Alert } from "react-native";
-
+import { useCustomAlert } from "@/shared/context/AlertContext";
 // Sección: Hook que contiene la lógica para unir múltiples PDFs
 // Funciones: usePdfMerger expone estados y funciones para seleccionar archivos subirlos unirlos descargar y compartir
 
 export function usePdfMerger() {
+  const { showAlert } = useCustomAlert();
   const [files, setFiles] = useState<DocumentPicker.DocumentPickerAsset[]>([]);
   const [processing, setProcessing] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -28,7 +28,7 @@ export function usePdfMerger() {
         setResultUri(null);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudieron seleccionar los archivos");
+      showAlert("Error", "No se pudieron seleccionar los archivos", "error");
     }
   }
 
@@ -40,7 +40,7 @@ export function usePdfMerger() {
   // Función: processMerge sube todos los archivos a nuestro backend, los une y descarga el resultado
   async function processMerge() {
     if (files.length < 2) {
-      Alert.alert("Aviso", "Necesitas al menos 2 PDFs para unirlos.");
+      showAlert("Aviso", "Necesitas al menos 2 PDFs para unirlos.", "warning");
       return;
     }
 
@@ -83,7 +83,7 @@ export function usePdfMerger() {
       setResultUri(downloadRes.uri);
       setCompleted(true);
     } catch (error: any) {
-      Alert.alert("Error al Unir", error.message || "Ocurrió un error");
+      showAlert("Error al Unir", error.message || "Ocurrió un error", "error");
     } finally {
       setProcessing(false);
     }

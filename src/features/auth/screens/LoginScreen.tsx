@@ -1,218 +1,222 @@
-import React, { useState } from 'react';
-import { Alert, StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { supabase } from '@/shared/services/supabase';
 import { Link as ExpoLink } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Colors } from '@/shared/theme/theme';
+import { useCustomAlert } from '@/shared/context/AlertContext';
 
-// Sección: Este archivo contiene la pantalla donde los usuarios existentes pueden iniciar sesión usando su correo y contraseña
-
-// Funciones: LoginScreen sirve para capturar los datos del usuario validarlos contactar a nuestra base de datos (Supabase) y darle acceso a la aplicación principal
-
-// Exportamos nuestra pantalla de login
 export default function LoginScreen() {
-  // Creamos un estado para guardar el correo que el usuario va escribiendo
   const [email, setEmail] = useState('');
-  // Creamos un estado para guardar la contraseña escrita
   const [password, setPassword] = useState('');
-  // Creamos un estado para saber si estamos cargando los datos y mostrar la bolita girando
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useCustomAlert();
 
-  // Esta función asíncrona se dispara cuando le dan al botón de entrar
   async function signInWithEmail() {
-    // Primero verificamos que el usuario no haya dejado los campos vacíos por error
     if (!email || !password) {
-      // Si están vacíos mostramos una alerta en pantalla
-      Alert.alert('Campos vacíos', 'Por favor ingresa tu correo y contraseña.');
-      // Detenemos la función para no enviar nada al servidor
+      showAlert('Campos vacíos', 'Por favor ingresa tu correo y contraseña.', 'warning');
       return;
     }
 
-    // Prendemos el indicador de carga para que la app parezca que está trabajando
     setLoading(true);
     
-    // Le pedimos a Supabase que intente iniciar sesión con los datos provistos
     const { error } = await supabase.auth.signInWithPassword({
-      // Le quitamos los espacios en blanco al inicio o final del correo
       email: email.trim(),
-      // Le pasamos la contraseña tal cual
       password: password,
     });
 
-    // Revisamos si ocurrió algún error en el proceso de inicio de sesión
     if (error) {
-      // Si el error es de email no confirmado dar instrucción clara
       if (error.message.toLowerCase().includes('email not confirmed')) {
-        // Mostramos alerta especial explicando cómo arreglar el problema de la base de datos
-        Alert.alert(
+        showAlert(
           'Cuenta sin confirmar',
-          'Esta cuenta fue creada antes de que se desactivara la confirmación de email.\n\nPor favor elimínala desde Supabase → Authentication → Users y regístrate de nuevo.'
+          'Esta cuenta fue creada antes de que se desactivara la confirmación de email.\n\nPor favor elimínala desde Supabase → Authentication → Users y regístrate de nuevo.',
+          'warning'
         );
-      // Si las credenciales simplemente son inválidas (mala contraseña o mal correo)
       } else if (error.message.toLowerCase().includes('invalid login credentials')) {
-        // Le avisamos que se equivocó
-        Alert.alert('Credenciales incorrectas', 'El correo o la contraseña no son correctos.');
-      // Para cualquier otro error extraño o del servidor
+        showAlert('Credenciales incorrectas', 'El correo o la contraseña no son correctos.', 'error');
       } else {
-        // Mostramos el mensaje directo que nos mandó Supabase
-        Alert.alert('Error', error.message);
+        showAlert('Error', error.message, 'error');
       }
     }
-    // Si no hay error el hook useAuth detecta la sesión y redirige automáticamente
-    // Por último apagamos el estado de carga
     setLoading(false);
   }
 
-  // Renderizamos el diseño visual de la pantalla
   return (
-    // Envolvemos todo en un KeyboardAvoidingView para que el teclado no tape los botones cuando se abre
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      {/* Contenedor del título y logo superior */}
-      <View style={styles.headerContainer}>
-        {/* Mostramos nuestro logo de texto con dos grosores de fuente distintos */}
-        <Text style={styles.logo}>Encoder <Text style={styles.logoBold}>Goti</Text></Text>
-        {/* Un pequeño subtítulo motivacional */}
-        <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
-      </View>
+    <LinearGradient
+      colors={['#0F172A', '#020617']}
+      style={styles.gradientContainer}
+    >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        
+        {/* Animated Header */}
+        <Animated.View entering={FadeInDown.duration(800).springify()} style={styles.headerContainer}>
+          <Text style={styles.logo}>Encoder<Text style={styles.logoBold}>Goti</Text></Text>
+          <Text style={styles.subtitle}>INICIA SESIÓN</Text>
+        </Animated.View>
 
-      {/* Contenedor para el formulario completo */}
-      <View style={styles.formContainer}>
-        {/* Etiqueta del primer campo de texto */}
-        <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput
-          // Estilo de caja con bordes
-          style={styles.input}
-          // Actualizamos nuestra variable cada vez que escriben una letra
-          onChangeText={(text) => setEmail(text)}
-          // Lo amarramos a nuestro estado
-          value={email}
-          // Texto gris de fondo de ayuda
-          placeholder="email@address.com"
-          // Impedimos que la primera letra se ponga en mayúscula (los correos van en minúscula)
-          autoCapitalize={'none'}
-          // Forzamos al teclado a que muestre la arroba (@) de forma rápida
-          keyboardType="email-address"
-        />
+        {/* Animated Form */}
+        <Animated.View entering={FadeInUp.duration(1000).springify().delay(200)} style={styles.formContainer}>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>EMAIL</Text>
+            <View style={styles.glassInputContainer}>
+              <TextInput
+                style={styles.input}
+                onChangeText={(text) => setEmail(text)}
+                value={email}
+                placeholder="usuario@ejemplo.com"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                autoCapitalize={'none'}
+                keyboardType="email-address"
+              />
+            </View>
+          </View>
 
-        {/* Etiqueta del segundo campo de texto */}
-        <Text style={styles.label}>Contraseña</Text>
-        <TextInput
-          // Estilo de caja
-          style={styles.input}
-          // Actualizamos la variable de contraseña
-          onChangeText={(text) => setPassword(text)}
-          // Amarramos el estado
-          value={password}
-          // Convertimos las letras en puntitos ocultos para que nadie espíe
-          secureTextEntry={true}
-          // Ejemplo de contraseña
-          placeholder="********"
-          // Nada de mayúsculas automáticas
-          autoCapitalize={'none'}
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>PASSWORD</Text>
+            <View style={styles.glassInputContainer}>
+              <TextInput
+                style={styles.input}
+                onChangeText={(text) => setPassword(text)}
+                value={password}
+                secureTextEntry={true}
+                placeholder="••••••••"
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                autoCapitalize={'none'}
+              />
+            </View>
+          </View>
 
-        {/* El botón gigante para enviar todo */}
-        <TouchableOpacity style={styles.button} onPress={signInWithEmail} disabled={loading}>
-          {/* Si estamos en proceso mostramos un trompo cargando si no mostramos el texto */}
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Iniciar Sesión</Text>}
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.buttonWrapper}
+            onPress={signInWithEmail}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={[Colors.dark.tint, '#3B82F6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.neonButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#020617" />
+              ) : (
+                <Text style={styles.buttonText}>ENTRAR</Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
 
-        {/* Sección inferior con el enlace hacia registro */}
-        <View style={styles.footer}>
-          {/* Texto normal */}
-          <Text style={styles.footerText}>¿No tienes una cuenta? </Text>
-          {/* Enlace enrutador de Expo que te manda a la pantalla de crear cuenta */}
-          <ExpoLink href="/(auth)/register" asChild>
-            {/* Hacemos que sea un botón tocable */}
-            <TouchableOpacity>
-              {/* Le ponemos color azul de enlace */}
-              <Text style={styles.link}>Regístrate</Text>
-            </TouchableOpacity>
-          </ExpoLink>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿NO TIENES CUENTA? </Text>
+            <ExpoLink href="/(auth)/register" asChild>
+              <TouchableOpacity>
+                <Text style={styles.link}>CREA UNA AHORA</Text>
+              </TouchableOpacity>
+            </ExpoLink>
+          </View>
+        </Animated.View>
+
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
-// Empezamos los estilos
 const styles = StyleSheet.create({
-  // Caja que ocupa toda la pantalla con fondo blanco
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     justifyContent: 'center',
-    padding: 24,
+    padding: 32,
   },
-  // Centramos el encabezado
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
   },
-  // Letras gigantes del logo
   logo: {
-    fontSize: 32,
-    color: '#333',
+    fontSize: 48,
+    color: '#FFF',
+    letterSpacing: -1,
+    fontFamily: Platform.OS === 'ios' ? 'HelveticaNeue-CondensedBold' : 'sans-serif-condensed',
   },
-  // Palabra resaltada en el logo
   logoBold: {
-    fontWeight: 'bold',
-    color: '#1E3A8A', // Azul marino profesional
+    color: Colors.dark.tint,
+    fontWeight: '900',
+    textShadowColor: Colors.dark.tint,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
   },
-  // Textito pequeño abajo del logo
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#94A3B8',
     marginTop: 8,
+    letterSpacing: 4,
+    fontWeight: '700',
   },
-  // Contenedor que empuja los bordes
   formContainer: {
     width: '100%',
   },
-  // Letras de las etiquetas encima de las cajas
+  inputGroup: {
+    marginBottom: 24,
+  },
   label: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 12,
+    color: '#94A3B8',
     marginBottom: 8,
-    fontWeight: '500',
-  },
-  // Cajas para escribir
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  // Botón grueso
-  button: {
-    backgroundColor: '#1E3A8A',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  // Letras blancas dentro del botón
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    letterSpacing: 2,
     fontWeight: 'bold',
   },
-  // Acomodo horizontal para la parte de abajo
+  glassInputContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: '#FFF',
+  },
+  buttonWrapper: {
+    marginTop: 16,
+    borderRadius: 16,
+    shadowColor: Colors.dark.tint,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  neonButton: {
+    padding: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#020617',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 32,
   },
-  // Color del texto gris
   footerText: {
-    color: '#666',
+    color: '#64748B',
+    fontSize: 12,
+    letterSpacing: 1,
   },
-  // Color del enlace en azul
   link: {
-    color: '#1E3A8A',
+    color: Colors.light.tint, // Magenta neón
     fontWeight: 'bold',
+    fontSize: 12,
+    letterSpacing: 1,
+    textShadowColor: Colors.light.tint,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
 });
-
-// si quitas LoginScreen pasa que los usuarios que ya crearon cuenta nunca más podrán entrar y la app se volverá inútil para la gente que cerró sesión

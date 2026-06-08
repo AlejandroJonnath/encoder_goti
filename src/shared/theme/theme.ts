@@ -4,42 +4,40 @@ import { Platform } from 'react-native';
 
 // Funciones: No hay funciones propias, solo se exportan objetos constantes que guardan la configuración de estilos
 
-// Definimos el color principal que destacará en el modo claro (un tono azul)
-const tintColorLight = '#0a7ea4';
-// Definimos el color principal que destacará en el modo oscuro (color blanco puro)
-const tintColorDark = '#fff';
+// Definimos el color principal que destacará en el modo claro (un rosa/morado neón vibrante para dar un toque moderno)
+const tintColorLight = '#D946EF';
+// Definimos el color principal que destacará en el modo oscuro (cian neón resplandeciente)
+const tintColorDark = '#22D3EE';
 
 // Exportamos nuestro objeto de colores para poder usarlo en cualquier pantalla
 export const Colors = {
   // Configuramos la paleta para cuando el celular esté en modo claro
   light: {
-    // Color principal para los textos (un gris muy oscuro)
-    text: '#11181C',
-    // Color para el fondo de las pantallas (blanco puro)
-    background: '#fff',
-    // El color de destaque o botones principales
+    text: '#0F172A',
+    background: '#F8FAFC',
     tint: tintColorLight,
-    // Color para los íconos inactivos o secundarios
-    icon: '#687076',
-    // Color para los íconos de la barra de navegación que no están seleccionados
-    tabIconDefault: '#687076',
-    // Color para el ícono de la barra de navegación que sí está seleccionado
+    icon: '#64748B',
+    tabIconDefault: '#94A3B8',
     tabIconSelected: tintColorLight,
+    // Colores extra para fondos inmersivos
+    surface: '#FFFFFF',
+    border: '#E2E8F0',
   },
-  // Configuramos la paleta para cuando el celular esté en modo oscuro
+  // Configuramos la paleta para cuando el celular esté en modo oscuro (o en este caso, el diseño por defecto que queremos forzar si es posible)
   dark: {
-    // Color principal para los textos (un gris muy clarito casi blanco)
-    text: '#ECEDEE',
-    // Color para el fondo de las pantallas (un negro o gris súper oscuro)
-    background: '#151718',
-    // El color de destaque o botones principales para el modo oscuro
+    // Texto blanco puro y gris muy claro para legibilidad
+    text: '#F8FAFC',
+    // Fondo oscuro profundo (Midnight blue / Slate)
+    background: '#020617',
+    // Detalles principales en cian neón
     tint: tintColorDark,
-    // Color para los íconos inactivos o secundarios
-    icon: '#9BA1A6',
-    // Color para los íconos de la barra de navegación que no están seleccionados
-    tabIconDefault: '#9BA1A6',
-    // Color para el ícono de la barra de navegación que sí está seleccionado
+    // Iconos apagados
+    icon: '#64748B',
+    tabIconDefault: '#475569',
     tabIconSelected: tintColorDark,
+    // Superficies para tarjetas (Dark Glass)
+    surface: '#0F172A',
+    border: '#1E293B',
   },
 };
 

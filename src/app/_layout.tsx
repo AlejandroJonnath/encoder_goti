@@ -5,6 +5,7 @@ import 'react-native-reanimated';
 import { useEffect } from 'react';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 import { useSessionAuth } from '@/features/auth/hooks/useSessionAuth';
+import { AlertProvider } from '@/shared/context/AlertContext';
 
 // Sección: Este archivo es el componente principal o enrutador raíz de toda la aplicación donde se decide qué pantallas mostrar y se protege el acceso dependiendo de si el usuario inició sesión o no
 
@@ -48,21 +49,21 @@ export default function RootLayout() {
 
   // Retornamos la estructura visual del cascarón de la app
   return (
-    // Aplicamos el tema visual para que todo herede esos colores por defecto
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      {/* Ocultamos las cabeceras nativas porque nosotros diseñaremos las nuestras */}
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Declaramos el grupo de pestañas principales */}
-        <Stack.Screen name="(tabs)" />
-        {/* Declaramos el grupo de pantallas de registro e inicio de sesión */}
-        <Stack.Screen name="(auth)" />
-        {/* Declaramos una pantalla modal por si necesitamos mostrar ventanitas emergentes */}
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      {/* Ajustamos la barra de arriba del celular (donde está la batería) para que combine con el tema */}
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AlertProvider>
+      {/* Aplicamos el tema visual para que todo herede esos colores por defecto */}
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        {/* Ocultamos las cabeceras nativas porque nosotros diseñaremos las nuestras */}
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* Declaramos el grupo de pestañas principales */}
+          <Stack.Screen name="(tabs)" />
+          {/* Declaramos el grupo de pantallas de registro e inicio de sesión */}
+          <Stack.Screen name="(auth)" />
+          {/* Declaramos una pantalla modal por si necesitamos mostrar ventanitas emergentes */}
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        {/* Ajustamos la barra de arriba del celular (donde está la batería) para que combine con el tema */}
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AlertProvider>
   );
 }
-
-// si quitas RootLayout pasa que tu aplicación dejará de arrancar por completo perderá el enrutamiento y cualquier persona podrá acceder a las pantallas protegidas sin haber iniciado sesión

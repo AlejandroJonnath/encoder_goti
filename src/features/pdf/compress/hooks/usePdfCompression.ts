@@ -2,12 +2,12 @@ import * as DocumentPicker from "expo-document-picker";
 import { documentDirectory, downloadAsync } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useState } from "react";
-import { Alert } from "react-native";
-
+import { useCustomAlert } from "@/shared/context/AlertContext";
 // Sección: Hook que contiene toda la lógica de la pantalla de compresión
 // Funciones: usePdfCompression expone el estado y las funciones necesarias para seleccionar subir comprimir descargar y compartir un PDF
 
 export function usePdfCompression() {
+  const { showAlert } = useCustomAlert();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerResult | null>(
     null,
   );
@@ -29,7 +29,7 @@ export function usePdfCompression() {
         setResultUri(null);
       }
     } catch (err) {
-      Alert.alert("Error", "No se pudo seleccionar el archivo");
+      showAlert("Error", "No se pudo seleccionar el archivo", "error");
     }
   }
 
@@ -74,9 +74,10 @@ export function usePdfCompression() {
       setResultUri(downloadRes.uri);
       setCompleted(true);
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error al Comprimir",
         error.message || "Ocurrió un error inesperado",
+        "error"
       );
     } finally {
       setProcessing(false);
