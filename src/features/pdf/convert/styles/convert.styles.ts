@@ -1,0 +1,46 @@
+import { StyleSheet } from "react-native";
+
+export default StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F8F9FA" },
+  content: { padding: 24, alignItems: "center" },
+  uploadBox: {
+    width: "100%",
+    height: 300,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  uploadText: { fontSize: 18, fontWeight: "bold" },
+  fileContainer: { width: "100%", alignItems: "center" },
+  fileInfoBox: {
+    width: "100%",
+    backgroundColor: "#fff",
+    padding: 24,
+    borderRadius: 16,
+    alignItems: "center",
+    marginBottom: 24,
+    elevation: 2,
+  },
+  fileName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  fileSize: { fontSize: 14, color: "#888", marginTop: 4 },
+  actionButton: {
+    width: "100%",
+    padding: 18,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  actionButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  cancelButton: { marginTop: 16, padding: 8 },
+  cancelText: { color: "#888", fontSize: 14 },
+});
