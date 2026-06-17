@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FileText, Minimize, Merge, PenTool, BrainCircuit, FileImage, Type, Table, Presentation, FileCode, StickyNote } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '@/shared/theme/theme';
 
 const { width } = Dimensions.get('window');
@@ -54,6 +55,58 @@ const categories: Category[] = [
   }
 ];
 
+function ToolCard({ tool, onPress, delay }: { tool: Tool, onPress: () => void, delay: number }) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handlePressIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(600).delay(delay).springify()}
+      style={animatedStyle}
+    >
+      <Pressable
+        style={[styles.card, { borderColor: tool.color }]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onPress();
+        }}
+      >
+        <View style={[styles.glowEffect, { shadowColor: tool.color }]} />
+
+        <LinearGradient
+          colors={[tool.color, '#00000000']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, { opacity: 0.1 }]}
+        />
+
+        <View style={[styles.iconContainer, { backgroundColor: tool.color, shadowColor: tool.color }]}>
+          {tool.icon}
+        </View>
+
+        <Text style={styles.cardTitle}>{tool.title}</Text>
+        <Text style={styles.cardDescription}>{tool.description}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
 
@@ -86,33 +139,12 @@ export default function HomeScreen() {
                   globalCardIndex++;
 
                   return (
-                    <Animated.View
+                    <ToolCard
                       key={tool.id}
-                      entering={FadeInDown.duration(600).delay(currentDelay).springify()}
-                    >
-                      <TouchableOpacity
-                        style={[styles.card, { borderColor: tool.color }]}
-                        activeOpacity={0.7}
-                        onPress={() => router.push(tool.route as any)}
-                      >
-                        {/* Glow effect sutil simulado con box shadow del color respectivo */}
-                        <View style={[styles.glowEffect, { shadowColor: tool.color }]} />
-
-                        <LinearGradient
-                          colors={[tool.color, '#00000000']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 0, y: 1 }}
-                          style={[StyleSheet.absoluteFill, { opacity: 0.1 }]}
-                        />
-
-                        <View style={[styles.iconContainer, { backgroundColor: tool.color, shadowColor: tool.color }]}>
-                          {tool.icon}
-                        </View>
-
-                        <Text style={styles.cardTitle}>{tool.title}</Text>
-                        <Text style={styles.cardDescription}>{tool.description}</Text>
-                      </TouchableOpacity>
-                    </Animated.View>
+                      tool={tool}
+                      delay={currentDelay}
+                      onPress={() => router.push(tool.route as any)}
+                    />
                   );
                 })}
               </View>

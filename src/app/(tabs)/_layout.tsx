@@ -3,7 +3,6 @@ import React from 'react';
 import { FileText, User } from 'lucide-react-native';
 import { Colors } from '@/shared/theme/theme';
 import { View, StyleSheet, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabLayout() {
   return (
@@ -13,12 +12,6 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.dark.icon,
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarBackground: () => (
-          <LinearGradient
-            colors={['rgba(2, 6, 23, 0.85)', 'rgba(15, 23, 42, 0.95)']}
-            style={StyleSheet.absoluteFill}
-          />
-        ),
         tabBarShowLabel: false,
       }}>
       <Tabs.Screen
@@ -49,25 +42,12 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 24 : 16,
-    left: 24,
-    right: 24,
-    elevation: 0,
-    backgroundColor: 'transparent',
-    borderRadius: 24,
-    height: 64,
-    borderTopWidth: 0,
-    shadowColor: Colors.dark.tint,
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#0F172A',
+    height: Platform.OS === 'ios' ? 88 : 78,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+    paddingTop: 8,
   },
   iconContainer: {
     alignItems: 'center',

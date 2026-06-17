@@ -1,0 +1,47 @@
+-- ==========================================
+-- SCRIPT DE ACTUALIZACIÓN (MIGRACIÓN)
+-- Cópialo y pégalo en el SQL Editor de Supabase
+-- ==========================================
+
+-- 1. Actualizar la tabla "profiles" existente agregando el campo "role"
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS role text default 'client' check (role in ('client', 'admin'));
+
+-- Añadir la política para que los administradores vean todos los perfiles
+DROP POLICY IF EXISTS "Los administradores pueden ver todos los perfiles" ON public.profiles;
+CREATE POLICY "Los administradores pueden ver todos los perfiles" ON public.profiles
+FOR SELECT USING (
+  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+);
+
+-- 2. Actualizar la tabla "documents" existente
+-- Añadir la política para que los administradores vean todos los documentos
+DROP POLICY IF EXISTS "Los administradores pueden ver todos los documentos" ON public.documents;
+CREATE POLICY "Los administradores pueden ver todos los documentos" ON public.documents
+FOR SELECT USING (
+  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+);
+
+-- 3. Crear la nueva tabla de "logs" (Si no existe)
+CREATE TABLE IF NOT EXISTS public.logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users null, 
+  log_type text not null check (log_type in ('error', 'admin_activity', 'file_upload')),
+  message text not null,
+  details jsonb, 
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Activar RLS para la tabla de logs
+ALTER TABLE public.logs ENABLE ROW LEVEL SECURITY;
+
+-- Crear políticas para la tabla de logs
+DROP POLICY IF EXISTS "Usuarios pueden insertar logs" ON public.logs;
+CREATE POLICY "Usuarios pueden insertar logs" ON public.logs 
+FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Los administradores pueden ver todos los logs" ON public.logs;
+CREATE POLICY "Los administradores pueden ver todos los logs" ON public.logs
+FOR SELECT USING (
+  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+);
