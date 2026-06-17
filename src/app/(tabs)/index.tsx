@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FileText, Minimize, Merge, PenTool, BrainCircuit, FileImage, Type, Table, Presentation, FileCode, StickyNote } from 'lucide-react-native';
+import { FileText, Minimize, Merge, PenTool, BrainCircuit, FileImage, Type, Table, Presentation, FileCode, StickyNote, Languages } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -51,6 +51,7 @@ const categories: Category[] = [
     title: 'Inteligencia Artificial',
     data: [
       { id: 'ai', title: 'Resumen IA', description: 'Extrae puntos clave', icon: <BrainCircuit color="#fff" size={32} />, color: '#D946EF', route: '/tool/ai' },
+      { id: 'translate', title: 'Traductor PDF', description: 'Traduce documentos', icon: <Languages color="#fff" size={32} />, color: '#0EA5E9', route: '/tool/translate' },
     ]
   }
 ];

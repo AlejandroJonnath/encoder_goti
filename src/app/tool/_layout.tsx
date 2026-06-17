@@ -12,6 +12,8 @@ export default function ToolLayout() {
       <Stack.Screen name="[id]" options={{ headerTitle: 'Herramienta PDF' }} />
       {/* Pantalla de resumen por IA */}
       <Stack.Screen name="ai" options={{ headerTitle: 'Resumen IA' }} />
+      {/* Pantalla del traductor */}
+      <Stack.Screen name="translate" options={{ headerTitle: 'Traductor PDF' }} />
       {/* Pantalla de compresión de PDF */}
       <Stack.Screen name="compress" options={{ headerTitle: 'Comprimir PDF' }} />
       {/* Pantalla de unión de PDFs */}
