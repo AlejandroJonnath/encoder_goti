@@ -74,15 +74,23 @@ export default function NotesScreen() {
   const shareFile = async () => {
     if (!resultUrl) return;
     try {
+      const originalName = file.assets[0].name;
+      const fileName = originalName.endsWith('.pdf') ? originalName : `${originalName}.pdf`;
       const downloadRes = await downloadAsync(
         resultUrl,
-        documentDirectory + `noted_document_${Date.now()}.pdf`
+        documentDirectory + fileName
       );
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(downloadRes.uri);
+        await Sharing.shareAsync(downloadRes.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Guardar PDF con nota',
+          UTI: 'com.adobe.pdf'
+        });
+      } else {
+        Alert.alert('Éxito', 'PDF guardado en el dispositivo: ' + downloadRes.uri);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      Alert.alert('Error al descargar', error.message || 'No se pudo descargar el archivo');
     }
   };
 
