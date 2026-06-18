@@ -75,8 +75,9 @@ export function usePdfMerger() {
       // Usamos el nombre del primer archivo como base del resultado
       const baseName = files[0].name.replace(/\.pdf$/i, "");
       const mergedName = `${baseName}_unido.pdf`;
+      const secureUrl = data.url.replace(/^http:\/\/(?!localhost|192\.168)/i, 'https://');
       const downloadRes = await downloadAsync(
-        data.url,
+        secureUrl,
         documentDirectory + mergedName,
       );
 

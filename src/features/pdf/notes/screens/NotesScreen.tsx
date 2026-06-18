@@ -63,7 +63,8 @@ export default function NotesScreen() {
       }
       const data = await response.json();
       
-      setResultUrl(data.url);
+      const secureUrl = data.url.replace(/^http:\/\/(?!localhost|192\.168)/i, 'https://');
+      setResultUrl(secureUrl);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

@@ -66,8 +66,10 @@ export function usePdfCompression() {
       // Descargamos el archivo desde la URL generada por nuestro backend
       // Conservamos el nombre original del archivo
       const originalName = asset.name.endsWith(".pdf") ? asset.name : asset.name + ".pdf";
+      // Forzamos HTTPS en el lado del cliente por si el backend se confunde con los proxies y envía HTTP
+      const secureUrl = data.url.replace(/^http:\/\/(?!localhost|192\.168)/i, 'https://');
       const downloadRes = await downloadAsync(
-        data.url,
+        secureUrl,
         documentDirectory + originalName,
       );
 
