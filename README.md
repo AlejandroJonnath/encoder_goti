@@ -72,7 +72,6 @@ El proyecto sigue una arquitectura limpia para separar la UI de la lógica de ne
 ## 6. APIs Externas y Backend de Firma Electrónica
 
 ### APIs Utilizadas
-*   **PDF.co**: Se utilizó para delegar toda la manipulación pesada de archivos (conversión, fusión, compresión). Hacer esto de manera local en un dispositivo móvil consumiría demasiada memoria, podría crashear la app y requeriría librerías nativas complejas.
 *   **Supabase**: Empleado para la autenticación de usuarios y la base de datos en tiempo real (según esquema de backend).
 
 ### ¿Por qué un Backend aparte (Node.js) para la Firma Electrónica?
