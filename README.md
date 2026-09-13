@@ -73,6 +73,7 @@ El proyecto sigue una arquitectura limpia para separar la UI de la lógica de ne
 
 ### APIs Utilizadas
 *   **Supabase**: Empleado para la autenticación de usuarios y la base de datos en tiempo real (según esquema de backend).
+*   **Groq** : Inteligencia artificial implementada para realizar resumen y traducción de PDF 
 
 ### ¿Por qué un Backend aparte (Node.js) para la Firma Electrónica?
 Firmar un PDF con un certificado criptográfico `.p12` requiere de operaciones de bajo nivel (manipulación de buffers, encriptación RSA/SHA-256) que **React Native no maneja bien de forma nativa** sin exponerse a brechas de seguridad o problemas de compatibilidad con librerías pesadas como `node-forge`. 
