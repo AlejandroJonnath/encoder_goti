@@ -81,6 +81,8 @@ export function useLogin() {
     try {
       // Armamos la dirección de retorno especial de la app usando el esquema encodergoti para que el celular sepa a qué app volver
       const redirectUri = makeRedirectUri({ scheme: 'encodergoti' });
+      console.log('[Google Auth] redirectUri generado:', redirectUri);
+      
       // Le pedimos a Supabase la URL de Google para iniciar sesión con OAuth pasándole a dónde debe regresar
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -93,17 +95,23 @@ export function useLogin() {
       });
 
       // Si Supabase falla al darnos la URL lanzamos el error para que caiga en el catch
-      if (error) throw error;
+      if (error) {
+        console.error('[Google Auth] Error de Supabase OAuth:', error);
+        throw error;
+      }
 
       // Verificamos que realmente hayamos recibido un enlace válido para abrir
       if (data?.url) {
+        console.log('[Google Auth] Abriendo WebBrowser con URL:', data.url);
         // Abrimos la pestañita segura del navegador con la página de Google y le decimos que espere a regresar a nuestro redirectUri
         const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+        console.log('[Google Auth] Resultado WebBrowser:', res);
 
         // Cuando la pestaña se cierra revisamos si fue un éxito y si realmente trajo una URL de respuesta
         if (res.type === 'success' && res.url) {
           // Como Supabase tiene la maña de devolver los tokens en el fragmento con hashtag en lugar de parámetros normales de URL guardamos esa URL completa
           const returnUrl = res.url;
+          console.log('[Google Auth] Return URL recibida:', returnUrl);
           // Partimos la URL en dos pedazos para agarrar todo lo que está después del hashtag o después del signo de interrogación por si acaso
           const fragmentString = returnUrl.includes('#') ? returnUrl.split('#')[1] : returnUrl.split('?')[1];
 
@@ -118,23 +126,31 @@ export function useLogin() {
 
             // Si logramos rescatar el access token de la marea de letras
             if (access_token) {
+              console.log('[Google Auth] Inyectando sesión en Supabase...');
               // Le inyectamos los tokens a la fuerza a la sesión de Supabase para decirle oye este usuario ya está logueado confía en mí
               const { error: sessionError } = await supabase.auth.setSession({
                 access_token,
                 refresh_token: refresh_token ?? '',
               });
               // Si Supabase rechaza los tokens lanzamos un error
-              if (sessionError) throw sessionError;
+              if (sessionError) {
+                console.error('[Google Auth] Error al setear sesión:', sessionError);
+                throw sessionError;
+              }
+              console.log('[Google Auth] Sesión iniciada con éxito con Google!');
             // Si por alguna razón la URL no traía el token explícito en el texto
             } else {
-              // Le pedimos a Supabase que intente refrescar la sesión manualmente usando las cookies mágicas
+              console.log('[Google Auth] No se encontró access_token en la URL, refrescando sesión...');
               await supabase.auth.refreshSession();
             }
           }
+        } else if (res.type !== 'success') {
+          console.warn('[Google Auth] WebBrowser no fue exitoso:', res.type);
         }
       }
     // Si algo sale mal en toda esta aventura del navegador
     } catch (error: any) {
+      console.error('[Google Auth] Error capturado:', error);
       // Mostramos una alerta roja avisándole que Google falló mostrándole el mensaje técnico
       showAlert('Error', error.message || 'Error con Google Auth', 'error');
     // Finalmente aseguramos que la ruedita de carga se apague sí o sí para no dejar la app colgada

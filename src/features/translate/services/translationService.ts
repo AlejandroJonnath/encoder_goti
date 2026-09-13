@@ -164,8 +164,8 @@ async function translateWithGroq(text: string, sourceLang: string, targetLang: s
   const response = await axios.post(
     url,
     {
-      // El modelo Llama 3.3 de 70 billones de parámetros que es muy bueno para idiomas
-      model: 'llama-3.3-70b-versatile', 
+      // Modelo de alta capacidad disponible en Groq
+      model: 'openai/gpt-oss-120b', 
       // Armamos la conversación con el sistema y el usuario
       messages: [
         {

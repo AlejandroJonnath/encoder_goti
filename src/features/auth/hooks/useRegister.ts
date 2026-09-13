@@ -136,6 +136,7 @@ export function useRegister() {
     try {
       // Creamos la dirección a la que Google nos va a devolver luego de autorizar
       const redirectUri = makeRedirectUri({ scheme: 'encodergoti' });
+      console.log('[Google Register] redirectUri generado:', redirectUri);
       // Pedimos a Supabase la llave para abrir Google por OAuth
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -148,17 +149,23 @@ export function useRegister() {
       });
 
       // Si no nos dieron la llave explotamos
-      if (error) throw error;
+      if (error) {
+        console.error('[Google Register] Error de Supabase OAuth:', error);
+        throw error;
+      }
 
       // Verificamos que sí tengamos un link válido de Google
       if (data?.url) {
+        console.log('[Google Register] Abriendo WebBrowser con URL:', data.url);
         // Abrimos la página de inicio de sesión de Google sobre nuestra app
         const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+        console.log('[Google Register] Resultado WebBrowser:', res);
 
         // Si el usuario terminó todo y regresó triunfante
         if (res.type === 'success' && res.url) {
           // Guardamos la URL sucia que nos trajo de regreso llena de tokens
           const returnUrl = res.url;
+          console.log('[Google Register] Return URL:', returnUrl);
           // Rompemos la URL para sacar solo la basura importante que está después del hashtag
           const fragmentString = returnUrl.includes('#') ? returnUrl.split('#')[1] : returnUrl.split('?')[1];
 
@@ -173,23 +180,31 @@ export function useRegister() {
 
             // Si trajimos pase VIP
             if (access_token) {
+              console.log('[Google Register] Inyectando sesión en Supabase...');
               // Se lo metemos a la fuerza a la sesión local de Supabase para que sepa que somos nosotros
               const { error: sessionError } = await supabase.auth.setSession({
                 access_token,
                 refresh_token: refresh_token ?? '',
               });
               // Si Supabase no quiso agarrar el pase VIP explotamos
-              if (sessionError) throw sessionError;
+              if (sessionError) {
+                console.error('[Google Register] Error al setear sesión:', sessionError);
+                throw sessionError;
+              }
+              console.log('[Google Register] Registro exitoso con Google!');
             // Si por alguna razón los tokens venían invisibles
             } else {
-              // Le ordenamos a Supabase que refresque la sesión cruzando los dedos para que las cookies funcionen
+              console.log('[Google Register] No se encontró access_token en la URL, refrescando sesión...');
               await supabase.auth.refreshSession();
             }
           }
+        } else if (res.type !== 'success') {
+          console.warn('[Google Register] WebBrowser no fue exitoso:', res.type);
         }
       }
     // Atrapamos errores locos
     } catch (error: any) {
+      console.error('[Google Register] Error capturado:', error);
       // Alerta con el drama completo
       showAlert('Error', error.message || 'Error con Google Auth', 'error');
     // Fin del drama apagamos la ruedita

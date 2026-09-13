@@ -8,7 +8,16 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "npx tsx src/test/runAll.ts",
+    "test:auth": "npx tsx src/test/auth.test.ts",
+    "test:signature": "npx tsx src/test/signature.test.ts",
+    "test:pdf": "npx tsx src/test/pdf.test.ts",
+    "test:ai": "npx tsx src/test/ai.test.ts",
+    "test:translation": "npx tsx src/test/translation.test.ts",
+    "test:supabase": "npx tsx src/test/supabase.test.ts",
+    "test:logger": "npx tsx src/test/logger.test.ts",
+    "test:performance": "npx tsx src/test/performance.test.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
