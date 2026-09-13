@@ -72,11 +72,11 @@ export async function runAllSuites() {
 
   console.log(`\x1b[1m---------------------------------------------------------------\x1b[0m`);
   console.log(`Total de Pruebas: \x1b[1m${totalTests}\x1b[0m | \x1b[32mExitosas: ${totalPassed}\x1b[0m | \x1b[31mFallidas: ${totalFailed}\x1b[0m | Tiempo Total: \x1b[33m${globalDuration}ms\x1b[0m`);
-  
+
   if (totalFailed === 0) {
-    console.log(`\n\x1b[1m\x1b[32m🎉 ¡TODAS LAS FUNCIONALIDADES Y PRUEBAS DE RENDIMIENTO HAN PASADO EXITOSAMENTE!\x1b[0m\n`);
+    console.log(`\n\x1b[1m\x1b[32m ¡TODAS LAS FUNCIONALIDADES Y PRUEBAS DE RENDIMIENTO HAN PASADO EXITOSAMENTE!\x1b[0m\n`);
   } else {
-    console.log(`\n\x1b[1m\x1b[31m⚠️ SE ENCONTRARON ${totalFailed} FALLOS EN LA SUITE.\x1b[0m\n`);
+    console.log(`\n\x1b[1m\x1b[31m SE ENCONTRARON ${totalFailed} FALLOS EN LA SUITE.\x1b[0m\n`);
     process.exit(1);
   }
 }
