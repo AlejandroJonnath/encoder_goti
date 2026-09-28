@@ -10,12 +10,9 @@ import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 // Funciones: IconSymbol sirve como un traductor universal que agarra los nombres de los íconos de Apple y los cambia por sus equivalentes más parecidos de Google para que la app se vea bien en Android
 
 // Definimos el tipo de nuestro diccionario de traducción
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
-// Obtenemos solo los nombres de los íconos de Apple que hayamos configurado aquí
-type IconSymbolName = keyof typeof MAPPING;
-
+type IconMapping = Record<string, ComponentProps<typeof MaterialIcons>['name']>;
 // MAPPING es nuestro diccionario manual para traducir los nombres de los íconos
-const MAPPING = {
+const MAPPING: IconMapping = {
   // Cuando iOS pida "house.fill" en Android mostraremos "home"
   'house.fill': 'home',
   // Cuando iOS pida un avioncito de papel aquí usamos "send"
@@ -24,7 +21,10 @@ const MAPPING = {
   'chevron.left.forwardslash.chevron.right': 'code',
   // Flechita a la derecha se llama "chevron-right"
   'chevron.right': 'chevron-right',
-} as IconMapping;
+};
+
+// Obtenemos solo los nombres de los íconos de Apple que hayamos configurado aquí
+type IconSymbolName = keyof typeof MAPPING;
 
 // Exportamos nuestro componente universal
 export function IconSymbol({

@@ -78,7 +78,7 @@ export default function ParallaxScrollView({
         // Aplicamos estilos fijos más los colores dinámicos más las animaciones de parallax
         style={[
           styles.header,
-          { backgroundColor: headerBackgroundColor[colorScheme] },
+          { backgroundColor: headerBackgroundColor[colorScheme === 'dark' ? 'dark' : 'light'] },
           headerAnimatedStyle,
         ]}>
         {/* Renderizamos la imagen o ícono que nos hayan pasado */}

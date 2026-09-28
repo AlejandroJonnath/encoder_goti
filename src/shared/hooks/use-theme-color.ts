@@ -12,8 +12,9 @@ export function useThemeColor(
   // Recibimos el nombre del color que queremos buscar (tiene que existir dentro de nuestro objeto Colors tanto en claro como en oscuro)
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  // Obtenemos el tema actual del dispositivo (claro u oscuro) usando nuestro propio hook y si falla por defecto usamos el claro
-  const theme = useColorScheme() ?? 'light';
+  // Obtenemos el tema actual del dispositivo (claro u oscuro) usando nuestro propio hook y si es unspecified o falla usamos el claro
+  const rawTheme = useColorScheme();
+  const theme: 'light' | 'dark' = rawTheme === 'dark' ? 'dark' : 'light';
   // Revisamos si en las propiedades que le mandamos viene un color forzado para el tema actual
   const colorFromProps = props[theme];
 
