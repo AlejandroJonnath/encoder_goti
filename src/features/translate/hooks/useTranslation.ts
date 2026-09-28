@@ -5,8 +5,10 @@ import * as DocumentPicker from "expo-document-picker";
 import { useState } from "react";
 // Nuestro sistema de mensajes emergentes personalizados
 import { useCustomAlert } from "@/shared/context/AlertContext";
-// Las herramientas que hablan con PDF.co para subir y extraer texto
-import { extractTextFromPdf, uploadFileToPdfco, convertHtmlToPdf } from "@/features/pdf/shared/services/pdfco";
+// Nuestro extractor local gratuito desde el backend
+import { extractTextLocally } from "@/features/pdf/shared/services/pdfBackend";
+// Generador nativo local de PDFs desde HTML (costo $0.00 y sin dependencias de red)
+import * as Print from 'expo-print';
 // El cerebro que hace la traducción de texto con Groq o Gemini
 import { translateText } from "../services/translationService";
 // Para copiar el resultado al portapapeles del celular
@@ -93,15 +95,9 @@ export function useTranslation() {
     setProcessing(true);
     // Zona de captura de errores de toda la operación
     try {
-      // Paso 1: avisamos y subimos el archivo
-      setProcessingStep("Subiendo documento a la nube...");
-      // Mandamos el PDF a PDF.co y recibimos la URL del archivo en la nube
-      const uploadedUrl = await uploadFileToPdfco(file.uri, file.name);
-      
-      // Paso 2: avisamos y extraemos el texto del PDF
-      setProcessingStep("Extrayendo texto del PDF...");
-      // Le pedimos a PDF.co que lea el PDF y nos escupa el texto puro
-      const text = await extractTextFromPdf(uploadedUrl);
+      // Paso 1 y 2: avisamos y extraemos el texto del PDF de manera local y gratuita
+      setProcessingStep("Extrayendo texto del documento...");
+      const text = await extractTextLocally(file.uri, file.name);
 
       // Si el texto resultante está vacío o son puros espacios
       if (!text || text.trim().length === 0) {
@@ -216,38 +212,10 @@ export function useTranslation() {
         </html>
       `;
 
-      // Call PDF.co directly with the raw HTML string
-      // Mandamos el HTML directamente a PDF.co usando fetch para que nos devuelva un PDF listo
-      const pdfcoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/from/html', {
-        method: 'POST',
-        headers: {
-          // Nuestra llave de PDF.co desde el entorno seguro
-          'x-api-key': process.env.EXPO_PUBLIC_PDFCO_API_KEY || '',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          // Le mandamos el HTML completo como string
-          html: htmlContent,
-          // El nombre que queremos para el PDF resultante
-          name: finalPdfName
-        })
+      // Generamos el PDF localmente en el dispositivo con expo-print a costo $0.00 y en menos de 1 segundo
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
       });
-
-      // Convertimos la respuesta a JSON para ver qué nos contestaron
-      const pdfcoData = await pdfcoResponse.json();
-      // Si PDF.co reporta error
-      if (pdfcoData.error) {
-        throw new Error(pdfcoData.message || "Error al convertir HTML a PDF");
-      }
-
-      // La URL del PDF recién horneado en la nube de PDF.co
-      const pdfUrl = pdfcoData.url;
-      
-      // Download the result
-      // Construimos la ruta local donde guardamos el PDF en el celular
-      const downloadPath = `${FileSystem.documentDirectory}${finalPdfName}`;
-      // Descargamos el PDF de la nube al almacenamiento local del celular
-      const { uri } = await FileSystem.downloadAsync(pdfUrl, downloadPath);
       
       // Share/Save the file
       // Si el sistema soporta compartir archivos (casi siempre sí)

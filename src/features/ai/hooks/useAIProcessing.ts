@@ -7,8 +7,8 @@ import { useState } from "react";
 import { summarizeText } from "@/features/ai/services/aiAssistant";
 // Importamos nuestro gancho personalizado para poder mostrar alertas bonitas en la pantalla cuando algo salga bien o mal
 import { useCustomAlert } from "@/shared/context/AlertContext";
-// Importamos las herramientas que nos permiten extraer el texto crudo de los PDFs y subirlos a la nube usando la API de pdfco
-import { extractTextFromPdf, uploadFileToPdfco } from "@/features/pdf/shared/services/pdfco";
+// Importamos el extractor local gratuito desde nuestro backend (sin costo de API)
+import { extractTextLocally } from "@/features/pdf/shared/services/pdfBackend";
 
 // SECCION PRINCIPAL DEL HOOK
 // FUNCION: useAIProcessing
@@ -63,10 +63,8 @@ export function useAIProcessing() {
     // Bloque principal de llamadas a la API
     // Envolvemos el proceso en un try porque al hablar con servidores externos pueden pasar mil cosas malas como que se caiga el internet
     try {
-      // Mandamos el archivo PDF hacia los servidores de PDF.co usando su ruta interna y su nombre original, y esperamos a que nos devuelvan el enlace público
-      const uploadedUrl = await uploadFileToPdfco(file.uri, file.name);
-      // Usamos el enlace público que nos acaban de dar para pedirle al servidor que lea el PDF por dentro y nos saque todo el texto plano
-      const text = await extractTextFromPdf(uploadedUrl);
+      // Extraemos el texto plano directamente desde nuestro backend usando pdf-parse a costo cero
+      const text = await extractTextLocally(file.uri, file.name);
 
       // Revisamos si el texto que nos devolvieron está vacío o no tiene nada útil
       if (!text || text.trim().length === 0) {
