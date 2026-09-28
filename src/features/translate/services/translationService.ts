@@ -164,8 +164,8 @@ async function translateWithGroq(text: string, sourceLang: string, targetLang: s
   const response = await axios.post(
     url,
     {
-      // Modelo de alta capacidad disponible en Groq
-      model: 'openai/gpt-oss-120b', 
+      // Modelo activo y potente disponible en Groq
+      model: 'openai/gpt-oss-120b',
       // Armamos la conversación con el sistema y el usuario
       messages: [
         {

@@ -1,7 +1,7 @@
 // SECCION DE IMPORTACIONES
 // Importamos DocumentPicker para que el usuario pueda abrir sus archivos y elegir un PDF
 import * as DocumentPicker from "expo-document-picker";
-// Traemos documentDirectory y downloadAsync para poder descargar el PDF ya comprimido y guardarlo en el celular
+// Traemos downloadAsync para poder descargar el PDF ya comprimido y guardarlo en el celular
 import { documentDirectory, downloadAsync } from "expo-file-system/legacy";
 // Importamos Sharing para poder enviarle el PDF a alguien por WhatsApp o guardarlo en Drive
 import * as Sharing from "expo-sharing";
@@ -9,6 +9,8 @@ import * as Sharing from "expo-sharing";
 import { useState } from "react";
 // Traemos nuestro gancho de alertas personalizadas para mostrar avisos de error o éxito
 import { useCustomAlert } from "@/shared/context/AlertContext";
+// Importamos nuestras utilidades de subida compatibles con RN 0.86+ / Hermes
+import { ensureFileInCache, uploadWithXhr } from "@/shared/utils/fileUpload";
 
 // SECCION PRINCIPAL DEL HOOK
 // FUNCION: usePdfCompression
@@ -65,33 +67,18 @@ export function usePdfCompression() {
     try {
       // Sacamos el primer archivo de los que eligió el usuario
       const asset = file.assets[0];
-      // Creamos un paquete de formulario como los de las páginas web antiguas
-      const formData = new FormData();
-      // Le metemos el PDF al paquete pasándole su dirección real, nombre y tipo
-      formData.append("pdf", {
-        uri: asset.uri,
-        name: asset.name,
-        type: "application/pdf"
-      } as any);
+
+      // Copiamos el archivo a caché antes de subirlo (fix: content:// URIs no son legibles por uploadAsync)
+      const safeUri = await ensureFileInCache(asset.uri, asset.name);
 
       // Revisamos a qué dirección de internet vamos a mandar esto o usamos el localhost de emergencia
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:3000";
-      // Lanzamos la petición POST a nuestra ruta de compresión con el paquete incluido
-      const response = await fetch(`${backendUrl}/api/pdf/compress`, {
-        method: "POST",
-        body: formData,
-      });
 
-      // Si el servidor nos mandó a volar con un error 500 o 400
-      if (!response.ok) {
-        // Intentamos leer el JSON del error o armamos uno vacío si falla
-        const errData = await response.json().catch(() => ({}));
-        // Hacemos explotar el código lanzando el error para que caiga en el catch
-        throw new Error(errData.error || "Error en el servidor al comprimir el PDF");
-      }
-
-      // Si todo fue bien leemos la respuesta del servidor en formato JSON
-      const data = await response.json();
+      // Usamos XHR en lugar de fetch+FormData (fix: "Unsupported FormDataPart" en Hermes RN 0.86+)
+      const data = await uploadWithXhr(
+        `${backendUrl}/api/pdf/compress`,
+        [{ fieldName: "pdf", uri: safeUri, name: asset.name, type: "application/pdf" }]
+      );
       
       // Si por alguna razón el servidor se hizo el loco y no nos mandó el link del archivo final
       if (!data.url) {

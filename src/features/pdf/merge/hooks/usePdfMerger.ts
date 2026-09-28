@@ -9,6 +9,8 @@ import * as Sharing from "expo-sharing";
 import { useState } from "react";
 // Traemos el contexto de alertas personalizadas para mostrar mensajitos flotantes
 import { useCustomAlert } from "@/shared/context/AlertContext";
+// Importamos nuestras utilidades de subida compatibles con RN 0.86+ / Hermes
+import { ensureFileInCache, uploadWithXhr } from "@/shared/utils/fileUpload";
 
 // SECCION PRINCIPAL DEL HOOK
 // FUNCION: usePdfMerger
@@ -77,36 +79,24 @@ export function usePdfMerger() {
     setProcessing(true);
     // Empezamos la zona de riesgo con la conexión a internet
     try {
-      // Armamos un paquete grande como un sobre de manila virtual
-      const formData = new FormData();
-      // Empezamos a revisar cada archivo en nuestra lista uno por uno
-      files.forEach((file) => {
-        // Y los vamos metiendo al paquete asegurándonos de que todos se llamen pdfs para que el backend los reciba como un arreglo
-        formData.append("pdfs", {
-          uri: file.uri,
-          name: file.name,
-          type: "application/pdf"
-        } as any);
-      });
+      // Armamos la lista de archivos copiando cada uno a caché primero (fix: content:// no legibles)
+      const fileEntries = await Promise.all(
+        files.map(async (f) => ({
+          fieldName: "pdfs",
+          uri: await ensureFileInCache(f.uri, f.name),
+          name: f.name,
+          type: "application/pdf",
+        }))
+      );
 
       // Verificamos si estamos conectados a la nube o si estamos jugando en el localhost de nuestro cuarto
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:3000";
-      // Lanzamos el paquete hacia la ruta correcta usando POST
-      const response = await fetch(`${backendUrl}/api/pdf/merge`, {
-        method: "POST",
-        body: formData,
-      });
 
-      // Si el servidor nos hace el feo y manda error
-      if (!response.ok) {
-        // Intentamos leer su queja o mandamos un objeto vacío
-        const errData = await response.json().catch(() => ({}));
-        // Aventamos el error para que caiga directo en el bloque catch de abajo
-        throw new Error(errData.error || "Error en el servidor al unir los PDFs");
-      }
-
-      // Si el servidor hizo su magia leemos lo que nos contestó
-      const data = await response.json();
+      // Usamos XHR en lugar de fetch+FormData (fix: "Unsupported FormDataPart" en Hermes RN 0.86+)
+      const data = await uploadWithXhr(
+        `${backendUrl}/api/pdf/merge`,
+        fileEntries
+      );
 
       // Revisamos si olvidó pasarnos la ruta del archivo pegado
       if (!data.url) {

@@ -93,8 +93,8 @@ async function summarizeWithGroq(text: string) {
     const response = await axios.post(
       url,
       {
-        // Usamos el modelo más potente disponible en Groq
-        model: 'openai/gpt-oss-120b', 
+        // Usamos el modelo activo y potente disponible en Groq
+        model: 'openai/gpt-oss-120b',
         // Armamos la conversación
         messages: [
           {

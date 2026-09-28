@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { uploadAsync } from 'expo-file-system/legacy';
+import { ensureFileInCache } from '@/shared/utils/fileUpload';
 
 // Sección: Este archivo contiene todas las funciones que se comunican con la nube de PDF.co para subir manipular transformar y leer archivos PDF y documentos
 
@@ -32,9 +33,13 @@ async function getPresignedUrl(fileName: string) {
 export async function uploadFileToPdfco(fileUri: string, fileName: string) {
   // Primero llamamos a la función anterior para que nos pase las direcciones
   const { presignedUrl, url } = await getPresignedUrl(fileName);
-  
+
+  // Copiamos el archivo a caché si viene como content:// (DocumentPicker en Android)
+  // fix: "Location isn't readable" con expo-file-system uploadAsync
+  const safeUri = await ensureFileInCache(fileUri, fileName);
+
   // Usamos el gestor de archivos de Expo para empezar a enviar el documento pesado hacia la URL temporal (presignedUrl)
-  const uploadResult = await uploadAsync(presignedUrl, fileUri, {
+  const uploadResult = await uploadAsync(presignedUrl, safeUri, {
     // Usamos el método PUT que significa que vamos a colocar el archivo ahí
     httpMethod: 'PUT',
     // Le volvemos a pasar la llave por si acaso la necesita el servidor de almacenamiento

@@ -4,7 +4,6 @@ import * as DocumentPicker from "expo-document-picker";
 // Nos traemos utilidades del sistema de archivos para guardar cosas o leerlas completas
 import {
   documentDirectory,
-  readAsStringAsync,
   writeAsStringAsync,
 } from "expo-file-system/legacy";
 // Importamos la habilidad de compartir archivos con el exterior
@@ -17,6 +16,9 @@ import { useState } from "react";
 import { decodeP12Certificate } from "@/features/pdf/shared/services/p12";
 // Traemos el sistema de mensajitos emergentes
 import { useCustomAlert } from "@/shared/context/AlertContext";
+// Utilidades para subir archivos compatibles con RN 0.86+ / Hermes
+import { ensureFileInCache, readFileAsBase64 } from "@/shared/utils/fileUpload";
+
 
 // Sección: Lógica de firmado electrónico avanzado de Ecuador con archivos criptográficos .p12/.pfx reales
 // Funciones: usePdfSignature administra la carga del PDF, la carga del certificado .p12, descifrado con contraseña, y estampado vectorial limpio (sin bordes).
@@ -89,10 +91,10 @@ export function usePdfSignature() {
         setResultUri(null);
 
         // Calculamos el total de páginas con pdf-lib
-        // Leemos todo nuestro pdf convirtiéndolo en un texto gigante estilo base64
-        const pdfBase64 = await readAsStringAsync(result.assets[0].uri, {
-          encoding: "base64",
-        });
+        // Copiamos el PDF a caché primero (fix: content:// no legible con readAsStringAsync en Android)
+        const safeUri = await ensureFileInCache(result.assets[0].uri, result.assets[0].name || 'document.pdf');
+        // Leemos todo nuestro pdf convirtiéndolo en un texto gigante estilo base64 vía readFileAsBase64
+        const pdfBase64 = await readFileAsBase64(safeUri);
         // Despertamos al lector de pdfs pesado para que analice esa cadena de texto
         const pdfDoc = await PDFDocument.load(pdfBase64);
         // Le preguntamos cuántas páginas encontró y las guardamos
@@ -159,10 +161,10 @@ export function usePdfSignature() {
     // Probamos suerte rompiendo el candado
     try {
       // Leemos el .p12 como base64
-      // Convertimos el archivo enano del certificado a puro texto
-      const p12Base64 = await readAsStringAsync(p12File.uri, {
-        encoding: "base64",
-      });
+      // Copiamos el .p12 a caché primero (fix: content:// no legible con readAsStringAsync en Android)
+      const safeP12Uri = await ensureFileInCache(p12File.uri, p12File.name || 'firma.p12');
+      // Convertimos el archivo del certificado a base64 de forma directa y segura
+      const p12Base64 = await readFileAsBase64(safeP12Uri);
 
       // Decodificamos y validamos criptográficamente con node-forge
       // Se lo pasamos a nuestra llave maestra para que escupa los datos sucios
@@ -218,84 +220,63 @@ export function usePdfSignature() {
     setProcessing(true);
     // Empezamos la magia
     try {
-      // Creamos una caja de cartón gigante virtual
-      const formData = new FormData();
-      // Metemos primero nuestro PDF principal a la caja
-      formData.append("pdf", {
-        uri: pdfFile.uri,
-        name: pdfFile.name || "document.pdf",
-        type: "application/pdf",
-      } as any);
-
-      // Ahora metemos el mini archivito peligroso de la firma
-      formData.append("p12", {
-        uri: p12File!.uri,
-        name: p12File!.name || "firma.p12",
-        type: "application/x-pkcs12",
-      } as any);
-
-      // En el mismo paquete aventamos la contraseña las posiciones y la hoja que queremos
-      formData.append("password", p12Password);
-      formData.append("posX", posX.toString());
-      formData.append("posY", posY.toString());
-      formData.append("pageNumber", pageNumber.toString());
+      // Copiamos los archivos a caché (fix: content:// no legibles en Android)
+      const safePdfUri = await ensureFileInCache(pdfFile.uri, pdfFile.name || "document.pdf");
+      const safeP12Uri = await ensureFileInCache(p12File!.uri, p12File!.name || "firma.p12");
 
       // Checamos a dónde le vamos a mandar esta bomba
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || "http://192.168.1.10:3000";
 
-      // Hacemos el envío especial por correo express
-      const response = await fetch(`${backendUrl}/api/sign`, {
-        // En POST para que el servidor atrape todo
-        method: "POST",
-        // El cuerpo es nuestra caja gorda
-        body: formData,
-        // Y le decimos que esperamos que nos conteste con un PDF fresco
-        headers: {
-          "Accept": "application/pdf",
-        },
+      // Usamos XHR directamente (fix: "Unsupported FormDataPart" con fetch+FormData en Hermes RN 0.86+)
+      // Esta vez necesitamos arraybuffer porque el servidor devuelve un PDF binario, no JSON
+      await new Promise<void>((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("pdf", { uri: safePdfUri, name: pdfFile.name || "document.pdf", type: "application/pdf" } as any);
+        formData.append("p12", { uri: safeP12Uri, name: p12File!.name || "firma.p12", type: "application/x-pkcs12" } as any);
+        formData.append("password", p12Password);
+        formData.append("posX", posX.toString());
+        formData.append("posY", posY.toString());
+        formData.append("pageNumber", pageNumber.toString());
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${backendUrl}/api/sign`);
+        xhr.responseType = "arraybuffer";
+        xhr.timeout = 120000;
+
+        xhr.onload = async () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // Convertimos el arraybuffer recibido a base64 para guardarlo con expo-file-system
+            const bytes = new Uint8Array(xhr.response as ArrayBuffer);
+            let binary = "";
+            bytes.forEach((b) => (binary += String.fromCharCode(b)));
+            const base64data = btoa(binary);
+
+            const originalName = pdfFile.name || "document.pdf";
+            const baseName = originalName.replace(/\.pdf$/i, "");
+            const finalUri = documentDirectory + baseName + "_firmado.pdf";
+            await writeAsStringAsync(finalUri, base64data, { encoding: "base64" });
+            setResultUri(finalUri);
+            setCompleted(true);
+            setProcessing(false);
+            resolve();
+          } else {
+            try {
+              const errText = String.fromCharCode(...new Uint8Array(xhr.response as ArrayBuffer));
+              const errData = JSON.parse(errText);
+              reject(new Error(errData?.error || `Error ${xhr.status} en el servidor de firmas`));
+            } catch {
+              reject(new Error(`Error ${xhr.status} en el servidor de firmas`));
+            }
+          }
+        };
+        xhr.onerror = () => reject(new Error("Error de red al firmar el documento"));
+        xhr.ontimeout = () => reject(new Error("Tiempo de espera agotado al firmar"));
+        xhr.send(formData);
       });
-
-      // Si el servidor nos cachetea
-      if (!response.ok) {
-        // Revisamos la nota de enojo
-        const errData = await response.json().catch(() => null);
-        // Tiramos el error al suelo
-        throw new Error(errData?.error || "Error en el servidor de firmas");
-      }
-
-      // Convertir la respuesta Blob del servidor a Base64 y guardarla
-      // Recibimos un pedazo de información bruta que no sabemos bien qué es (Blob)
-      const blob = await response.blob();
-      // Sacamos una lupa para leerlo
-      const reader = new FileReader();
-      // Se lo ponemos en la cara a la lupa para que lo pase a texto DataUrl
-      reader.readAsDataURL(blob);
-      // Cuando termine de leer hacemos esto
-      reader.onloadend = async () => {
-        // Agarramos el chorizo de texto le cortamos el inicio feo y nos quedamos con el puro base64
-        const base64data = reader.result?.toString().split(",")[1];
-        // Si sí encontramos base64
-        if (base64data) {
-          // Tomamos el nombre original
-          const originalName = pdfFile.name || "document.pdf";
-          // Lo rasuramos
-          const baseName = originalName.replace(/\.pdf$/i, "");
-          // Usamos el nombre original añadiendo _firmado para el archivo final
-          // Creamos su nueva identidad final
-          const finalUri = documentDirectory + baseName + "_firmado.pdf";
-          // Usamos expo para escribir todo ese base64 directo a un archivo físico
-          await writeAsStringAsync(finalUri, base64data, { encoding: "base64" });
-          // Guardamos dónde chingados lo guardamos
-          setResultUri(finalUri);
-          // Ponemos banderita de victoria
-          setCompleted(true);
-          // Apagamos rueda
-          setProcessing(false);
-        }
-      };
 
       // Nos vamos felices
       return;
+
     // Si nos cayó un asteroide encima
     } catch (err: any) {
       // Mandamos alerta en rojo chillón

@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, TextInput } from 'react-native';
 // Traemos Stack para configurar la barra superior
 import { Stack } from 'expo-router';
-// Sacamos nuestros íconos bonitos
+// Sacamos nuestros ícónos bonitos
 import { StickyNote, File, Download, CheckCircle } from 'lucide-react-native';
 // Importamos el explorador de documentos
 import * as DocumentPicker from 'expo-document-picker';
@@ -13,6 +13,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import { documentDirectory, downloadAsync } from 'expo-file-system/legacy';
 // Traemos la capacidad de compartir con otras aplicaciones
 import * as Sharing from 'expo-sharing';
+// Importamos utilidades de subida compatibles con RN 0.86+ / Hermes
+import { ensureFileInCache, uploadWithXhr } from '@/shared/utils/fileUpload';
+
 
 // SECCION PRINCIPAL DE LA PANTALLA
 // FUNCION: NotesScreen
@@ -74,35 +77,19 @@ export default function NotesScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.x:3000';
       // Desempaquetamos el primer archivo seleccionado
       const asset = file.assets[0];
-      
-      // Creamos un paquete de formulario grande
-      const formData = new FormData();
-      // Le metemos el documento pdf con todos sus metadatos
-      formData.append("pdf", {
-        uri: asset.uri,
-        name: asset.name,
-        type: "application/pdf"
-      } as any);
-      // Le embutimos el texto de la nota que escribieron
-      formData.append("noteText", noteText);
-      // Le decimos en qué página va o usamos la 1 por defecto si se hacen los chistosos
-      formData.append("pageNumber", pageNumber || '1');
-      
-      // Mandamos el misil al servidor a nuestra ruta de notas
-      const response = await fetch(`${apiUrl}/api/notes`, {
-        method: 'POST',
-        body: formData,
-      });
 
-      // Si el servidor nos dice que no
-      if (!response.ok) {
-        // Leemos el mensaje o ponemos un objeto vacío de salvavidas
-        const data = await response.json().catch(() => ({}));
-        // Aventamos el error al catch
-        throw new Error(data.error || 'Error al procesar');
-      }
-      // Si todo sale bien leemos el JSON devuelto
-      const data = await response.json();
+      // Copiamos el archivo a caché (fix: content:// URIs no legibles en Android)
+      const safeUri = await ensureFileInCache(asset.uri, asset.name);
+
+      // Usamos XHR en lugar de fetch+FormData (fix: "Unsupported FormDataPart" en Hermes RN 0.86+)
+      const data = await uploadWithXhr(
+        `${apiUrl}/api/notes`,
+        [{ fieldName: "pdf", uri: safeUri, name: asset.name, type: "application/pdf" }],
+        [
+          { fieldName: "noteText", value: noteText },
+          { fieldName: "pageNumber", value: pageNumber || '1' },
+        ]
+      );
       
       // Corregimos la URL asegurándonos de que sea HTTPS para que los teléfonos no bloqueen la descarga por insegura
       const secureUrl = data.url.replace(/^http:\/\/(?!localhost|192\.168)/i, 'https://');

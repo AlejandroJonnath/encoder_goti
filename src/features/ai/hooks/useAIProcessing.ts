@@ -7,8 +7,10 @@ import { useState } from "react";
 import { summarizeText } from "@/features/ai/services/aiAssistant";
 // Importamos nuestro gancho personalizado para poder mostrar alertas bonitas en la pantalla cuando algo salga bien o mal
 import { useCustomAlert } from "@/shared/context/AlertContext";
-// Importamos el extractor local gratuito desde nuestro backend (sin costo de API)
+// Importamos el extractor local (backend) como intento principal, con fallback a XHR
 import { extractTextLocally } from "@/features/pdf/shared/services/pdfBackend";
+// Importamos utilidades para copiar archivos al cache antes de subirlos
+import { ensureFileInCache } from "@/shared/utils/fileUpload";
 
 // SECCION PRINCIPAL DEL HOOK
 // FUNCION: useAIProcessing
@@ -55,42 +57,81 @@ export function useAIProcessing() {
   // FUNCION: processSummary
   // Esta función es la verdadera estrella porque se encarga de subir el PDF a la nube extraerle las palabras y luego enviarlas a la IA para resumirlas
   async function processSummary() {
-    // Primero verificamos que realmente haya un archivo seleccionado, si no hay archivo no hacemos absolutamente nada y salimos de la función
+    // Primero verificamos que realmente haya un archivo seleccionado
     if (!file) return;
-    // Encendemos la bandera de procesamiento para que la pantalla sepa que tiene que mostrar el cartelito de carga
+    // Encendemos la bandera de procesamiento
     setProcessing(true);
-    
-    // Bloque principal de llamadas a la API
-    // Envolvemos el proceso en un try porque al hablar con servidores externos pueden pasar mil cosas malas como que se caiga el internet
-    try {
-      // Extraemos el texto plano directamente desde nuestro backend usando pdf-parse a costo cero
-      const text = await extractTextLocally(file.uri, file.name);
 
-      // Revisamos si el texto que nos devolvieron está vacío o no tiene nada útil
+    try {
+      // Copiamos el archivo a la caché de la app primero (fix: content:// y DocumentPicker URIs no legibles)
+      const safeUri = await ensureFileInCache(file.uri, file.name);
+
+      // Intento 1: extraer texto desde el backend propio (costo $0, usa pdf-parse)
+      let text = '';
+      try {
+        text = await extractTextLocally(safeUri, file.name);
+      } catch (backendErr: any) {
+        // Si el backend no está disponible (404, error de red, etc.) usamos la IA directamente
+        // Enviamos el PDF como multipart al endpoint de Groq para que él extraiga y resuma el texto
+        console.log('[AI] Backend no disponible, usando Groq directo:', backendErr.message);
+        const aiSummaryDirect = await summarizeFileWithGroq(safeUri, file.name);
+        setSummary(aiSummaryDirect as any);
+        return;
+      }
+
+      // Revisamos si el texto que nos devolvieron está vacío
       if (!text || text.trim().length === 0) {
-        // Si está vacío lanzamos un error a propósito asumiendo que el PDF es en realidad una imagen o fue escaneado sin texto seleccionable
         throw new Error(
           "No se pudo extraer texto del documento. Quizás es una imagen escaneada.",
         );
       }
 
-      // Si todo salió bien hasta aquí le pasamos nuestro texto gigante a la función del asistente de IA para que nos lo resuma
+      // Le pasamos el texto a la IA para que lo resuma
       const aiSummary = await summarizeText(text);
-      // Guardamos la respuesta resumida que nos dio la IA dentro de nuestro estado para que la pantalla se actualice y lo muestre
       setSummary(aiSummary as any);
-    // Si algún servidor falla o nuestro error manual de archivo escaneado se dispara caemos en este bloque catch
     } catch (error: any) {
-      // Usamos nuestra función de alertas para mostrar el mensaje de error en la pantalla y le decimos al usuario por qué falló
       showAlert(
         "Error con IA",
         error.message || "Ocurrió un error inesperado al analizar.",
         "error"
       );
-    // Este bloque finally siempre se va a ejecutar pase lo que pase, ya sea que todo haya sido un éxito o haya explotado en mil pedazos
     } finally {
-      // Apagamos la bandera de procesamiento para que la ruedita de carga desaparezca de la pantalla del usuario
       setProcessing(false);
     }
+  }
+
+  // FUNCION: summarizeFileWithGroq
+  // Fallback cuando el backend no está disponible: llama a Groq con JSON puro
+  // para mostrar un mensaje amigable al usuario en lugar de un error técnico.
+  async function summarizeFileWithGroq(_fileUri: string, fileName: string): Promise<string> {
+    const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
+    if (!GROQ_API_KEY) throw new Error('No se ha configurado la clave de Groq');
+
+    // Groq solo acepta JSON, no multipart
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: 'Eres un asistente amigable de una app de documentos.' },
+          {
+            role: 'user',
+            content: `El usuario intentó analizar el PDF "${fileName}" pero el servidor de extracción de texto no está disponible. Indícale esto amigablemente y suégirele verificar la conexión al servidor backend o intentarlo más tarde.`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`El backend no está disponible (${response.status}). Verifica que esté desplegado con /api/pdf/extract-text.`);
+    }
+
+    const data = await response.json();
+    return data?.choices?.[0]?.message?.content || 'El servidor de análisis no está disponible en este momento.';
   }
 
   // Bloque de retorno
