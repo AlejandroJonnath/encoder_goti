@@ -1,5 +1,5 @@
-import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
-import { PlatformPressable } from '@react-navigation/elements';
+import { BottomTabBarButtonProps } from 'expo-router/js-tabs';
+import { PlatformPressable } from 'expo-router/react-navigation';
 import * as Haptics from 'expo-haptics';
 
 // Sección: Este archivo crea un botón especial para la barra de navegación de abajo que produce una pequeña vibración (respuesta háptica) cuando el usuario lo toca en dispositivos iOS
