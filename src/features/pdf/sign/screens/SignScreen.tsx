@@ -265,24 +265,60 @@ export default function SignScreen() {
               <View style={styles.previewPageWrapper}>
                 <View style={styles.previewPage}>
                   <Text style={styles.previewPageText}>Página {pageNumber}</Text>
-                  {/* El sellito falso volador */}
+                  {/* Sello profesional estilo FirmaEC / MINTEL Ecuador */}
                   <View
                     style={[
                       styles.previewSignatureStamp,
                       {
-                        // Matemáticas turbias para que el porcentaje coincida más o menos visualmente
                         left: `${posX * 0.75}%` as any,
                         bottom: `${posY * 0.75}%` as any,
                         width: scaleWidth * 0.6,
                       },
                     ]}
                   >
-                    <Text style={styles.stampHeader}>FIRMADO DIGITALMENTE</Text>
-                    <Text style={styles.stampText} numberOfLines={1}>
-                      {/* Usamos tu nombre real si existe o Juan Pérez de comodín */}
-                      {signerName || "Juan Pérez"}
-                    </Text>
-                    <Text style={styles.stampHash}>EC-SECURE-STAMP</Text>
+                    {/* Banda azul de cabecera */}
+                    <View style={styles.stampBand}>
+                      <Text style={styles.stampBandText}>FIRMADO ELECTRÓNICAMENTE · ECUADOR</Text>
+                    </View>
+
+                    {/* Cuerpo: QR + datos */}
+                    <View style={styles.stampBody}>
+                      {/* Columna izquierda: placeholder del QR */}
+                      <View style={styles.stampQrBox}>
+                        <Text style={styles.stampQrIcon}>{"▦"}</Text>
+                      </View>
+
+                      {/* Separador vertical */}
+                      <View style={styles.stampVerticalDivider} />
+
+                      {/* Columna derecha: datos del certificado */}
+                      <View style={styles.stampDataCol}>
+                        <Text style={styles.stampFieldRow} numberOfLines={1}>
+                          <Text style={styles.stampFieldLabel}>Firmante: </Text>
+                          <Text style={styles.stampFieldValue}>{signerName || "Tu Nombre"}</Text>
+                        </Text>
+                        <Text style={styles.stampFieldRow} numberOfLines={1}>
+                          <Text style={styles.stampFieldLabel}>Razón: </Text>
+                          <Text style={styles.stampFieldValue}>Firma Electrónica</Text>
+                        </Text>
+                        <Text style={styles.stampFieldRow} numberOfLines={1}>
+                          <Text style={styles.stampFieldLabel}>Fecha: </Text>
+                          <Text style={styles.stampFieldValue}>{new Date().toLocaleDateString("es-EC")}</Text>
+                        </Text>
+                        <Text style={styles.stampFieldRow} numberOfLines={1}>
+                          <Text style={styles.stampFieldLabel}>Emisor: </Text>
+                          <Text style={styles.stampFieldValue}>{issuerName || "CA Emisora"}</Text>
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Línea separadora del pie */}
+                    <View style={styles.stampFooterDivider} />
+
+                    {/* Pie: leyenda de verificación */}
+                    <View style={styles.stampFooter}>
+                      <Text style={styles.stampFooterText}>🔒 Verificable con FirmaEC · ARCOTEL Ecuador</Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -431,14 +467,34 @@ const styles = StyleSheet.create({
   previewPage: { width: 160, height: 220, backgroundColor: "#fff", borderRadius: 4, borderWidth: 1, borderColor: "#D1D5DB", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, justifyContent: "center", alignItems: "center" },
   // Letritas pálidas de qué pagina es
   previewPageText: { fontSize: 12, color: "#9CA3AF", fontWeight: "bold" },
-  // La caja voladora y transparente que imita la posición final de tu estampa
-  previewSignatureStamp: { position: "absolute", height: 42, borderRadius: 2, padding: 2, justifyContent: "center", alignItems: "flex-start", borderWidth: 0, backgroundColor: "transparent" },
-  // Título microscópico azulado del sello falso
-  stampHeader: { fontSize: 3.5, fontWeight: "bold", color: "#1E3A8A" },
-  // Tu nombre falso microscópico en negro
-  stampText: { fontSize: 4, fontWeight: "600", color: "#111827", marginVertical: 1 },
-  // El serial microscópico en verde
-  stampHash: { fontSize: 3, color: "#059669", fontWeight: "bold" },
+  // Caja del sello profesional con borde azul institucional
+  previewSignatureStamp: { position: "absolute", borderWidth: 1, borderColor: "#1E3A8A", borderRadius: 2, backgroundColor: "#fff", overflow: "hidden" },
+  // Banda azul de cabecera del sello
+  stampBand: { backgroundColor: "#1E3A8A", paddingHorizontal: 3, paddingVertical: 2, justifyContent: "center", alignItems: "center" },
+  // Texto blanco de la banda de cabecera
+  stampBandText: { fontSize: 3, color: "#fff", fontWeight: "bold", letterSpacing: 0.2 },
+  // Cuerpo del sello: QR + línea divisora + datos
+  stampBody: { flexDirection: "row", paddingHorizontal: 2, paddingTop: 2, paddingBottom: 1, gap: 2, alignItems: "flex-start" },
+  // Cuadrado gris que simula el código QR
+  stampQrBox: { width: 20, height: 20, backgroundColor: "#EFF6FF", borderWidth: 0.5, borderColor: "#BFDBFE", justifyContent: "center", alignItems: "center", borderRadius: 1 },
+  // Símbolo de cuadrícula que evoca un QR
+  stampQrIcon: { fontSize: 11, color: "#1E3A8A" },
+  // Línea vertical entre QR y columna de datos
+  stampVerticalDivider: { width: 0.5, alignSelf: "stretch", backgroundColor: "#D1D5DB", marginHorizontal: 1 },
+  // Columna derecha con los campos de datos
+  stampDataCol: { flex: 1, gap: 1.5 },
+  // Fila de un campo (label + valor inline)
+  stampFieldRow: { fontSize: 2.8 },
+  // Texto del label en negrita gris
+  stampFieldLabel: { fontWeight: "700", color: "#4B5563" },
+  // Valor del campo en negro
+  stampFieldValue: { fontWeight: "400", color: "#111827" },
+  // Línea horizontal gris separando el pie
+  stampFooterDivider: { height: 0.5, backgroundColor: "#E5E7EB", marginHorizontal: 0 },
+  // Fondo grisáceo del pie
+  stampFooter: { backgroundColor: "#F8FAFC", paddingHorizontal: 3, paddingVertical: 1.5, alignItems: "center" },
+  // Texto del pie
+  stampFooterText: { fontSize: 2.5, color: "#6B7280" },
   // Agrupador para los controles arrastrables
   controlRow: { marginBottom: 16 },
   // Label de la izquierda
